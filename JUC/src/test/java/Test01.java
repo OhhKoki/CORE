@@ -59,11 +59,9 @@ public class Test01 {
         // 创建并启动线程
         new Thread(futureTask).start();
 
-
         // 获取线程执行的结果
         // 主线程执行到该 get() 方法时，会进入阻塞状态，直到子线程执行完毕
         System.out.println(futureTask.get());
-
     }
 
 }
