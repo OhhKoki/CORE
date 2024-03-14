@@ -8,13 +8,13 @@ import java.util.concurrent.FutureTask;
  */
 public class Test01 {
     public static void main(String[] args) {
-        method3();
+        method01();
     }
 
     /**
      * 方式一，直接通过 Thread 创建
      */
-    private static void method1() {
+    private static void method01() {
         // 创建线程
         Thread thread = new Thread(){
             public void run() {
@@ -33,7 +33,7 @@ public class Test01 {
     /**
      * 方式二，Runnable 配合 Thread
      */
-    private static void method2() {
+    private static void method02() {
         // 创建任务
         Runnable runnable = new Runnable() {
             @Override
@@ -49,7 +49,7 @@ public class Test01 {
     /**
      * 方式三，FutureTask 配合 Thread
      */
-    private static void method3() {
+    private static void method03() {
         // 创建任务
         Callable callable = new Callable() {
             @Override
@@ -72,4 +72,5 @@ public class Test01 {
             e.printStackTrace();
         }
     }
+
 }
