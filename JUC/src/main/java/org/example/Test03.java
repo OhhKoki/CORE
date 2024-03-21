@@ -27,6 +27,7 @@ public class Test03 {
         }, "t2");
         t2.start();
 
+        // Blocked
         Thread t3 = new Thread(() -> {
             // 由于先执行的 t2 线程，所以 t2 线程获取了对象锁
             // 且由于 t2 在死循环，一直没释锁，导致 t3 获取不到锁，t3 进入 Blocked 状态等待 t2 释放锁
