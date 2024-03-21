@@ -1,14 +1,17 @@
 package org.example;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 
 /**
  * 创建线程的三种方式
  */
+@Slf4j(topic = "c.Test01")
 public class Test01 {
     public static void main(String[] args) {
-        method01();
+        method03();
     }
 
     /**
@@ -21,9 +24,9 @@ public class Test01 {
                 try {
                     Thread.sleep(3000);
                 } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+                    log.error(e.getMessage());
                 }
-                System.out.println("通过 Thread 类创建的线程");
+                log.debug("通过 Thread 类创建的线程");
             }
         };
         // 启动线程
@@ -38,7 +41,7 @@ public class Test01 {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                System.out.println("通过 Runnable 接口创建的线程");
+                log.debug("通过 Runnable 接口创建的线程");
             }
         };
 
@@ -54,7 +57,7 @@ public class Test01 {
         Callable callable = new Callable() {
             @Override
             public Object call() throws Exception {
-                System.out.println("通过 Callable 接口创建的线程");
+                log.debug("通过 Callable 接口创建的线程");
                 return 1;
             }
         };
