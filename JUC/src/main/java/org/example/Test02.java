@@ -13,7 +13,7 @@ public class Test02 {
     private static int r2 = 2;
 
     public static void main(String[] args) {
-        method08();
+        method07();
     }
 
     /**
@@ -191,27 +191,35 @@ public class Test02 {
      */
     private static void method07() {
         Thread thread = new Thread(() -> {
+            log.debug("执行 LockSupport.park()，子线程处于 Blocked 状态");
             LockSupport.park();
-            log.debug("parking");
 
-            log.debug("unPark");
+            log.debug("主线程执行了 interrupt()，打断了子线程的 Blocked 状态");
+
             // 不会清除打断标记，返回 true，后续无法继续 park
-//            log.debug("isInterrupted() 返回的打断标记状态为：{}", Thread.currentThread().isInterrupted());
+            log.debug("子线程执行 isInterrupted()，返回的打断标记状态为：{}", Thread.currentThread().isInterrupted());
 
             // 会清除打断标记（返回 false，后续可以继续 park
-            log.debug("interrupted() 返回的打断标记状态为：{}", Thread.interrupted());
+//            log.debug("子线程执行 Thread.interrupted()，返回的打断标记状态为：{}", Thread.interrupted());
 
+            // 执行 Thread.interrupted() 会清空状态，重新置为 false
+            log.debug("此时打断标记为：{}", Thread.currentThread().isInterrupted());
+
+            // 如果打断标记已经是 true, 则 park 会失效
             LockSupport.park();
-            log.debug("parking");
+            log.debug("子线程继续执行 LockSupport.park()");
         });
         thread.start();
 
         try {
+            log.debug("主线程进入休眠");
             Thread.sleep(2000);
+            log.debug("主线程执行 interrupt()");
             thread.interrupt();
         } catch (InterruptedException e) {
             log.error(e.getMessage());
         }
+        log.debug("主线程执行结束");
     }
 
     /**
@@ -236,4 +244,5 @@ public class Test02 {
         }
         log.debug("主线程执行结束");
     }
+
 }
