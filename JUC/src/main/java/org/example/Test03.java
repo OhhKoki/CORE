@@ -2,6 +2,9 @@ package org.example;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 线程状态
+ */
 @Slf4j(topic = "c.Test03")
 public class Test03 {
 

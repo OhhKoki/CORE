@@ -3,7 +3,9 @@ package org.example;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 改为面向对象的方式
+ * 两个线程对初始值为 0 的静态变量一个做自增，一个做自减，各做 5000 次，结果是 0 吗?
+ *      使用 synchronized 解决临界区问题
+ *          改为面向对象的方式
  */
 @Slf4j(topic = "c.Test07")
 public class Test07 {
@@ -33,27 +35,27 @@ public class Test07 {
 
     }
 
-}
+    static class Room {
+        private int counter;
 
-class Room {
-    private int counter;
-
-    public void increment() {
-        synchronized (this) {
-            counter ++;
+        public void increment() {
+            synchronized (this) {
+                counter ++;
+            }
         }
-    }
 
-    public void decrement() {
-        synchronized (this) {
-            counter --;
+        public void decrement() {
+            synchronized (this) {
+                counter --;
+            }
         }
-    }
 
-    public int getCounter() {
-        synchronized (this) {
-            return counter;
+        public int getCounter() {
+            synchronized (this) {
+                return counter;
+            }
         }
+
     }
 
 }
