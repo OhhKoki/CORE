@@ -20,7 +20,7 @@ public class Test03 {
                     // 没分到时间片为 Runnable
                     try {
                         // 防止空跑循环浪费 CPU
-                        // sleep() 不会释放锁
+                        // sleep() 是不会释放锁
                         Thread.sleep(50);
                     } catch (InterruptedException e) {
                         log.error(e.getMessage());
