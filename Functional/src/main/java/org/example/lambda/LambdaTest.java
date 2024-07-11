@@ -5,7 +5,7 @@ import java.util.function.IntFunction;
 public class LambdaTest {
 
     public static void main(String[] args) {
-
+        test02();
     }
 
     /**
