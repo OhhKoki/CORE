@@ -1,13 +1,15 @@
 package org.example.steam;
 
 import java.util.*;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class StreamTest {
 
     public static void main(String[] args) {
-        test08();
+        test15();
     }
 
     /**
@@ -185,6 +187,126 @@ public class StreamTest {
 
     }
 
+    /**
+     * forEach():
+     *      需求：打印所有作家的名字，并且去重
+     */
+    private static void test09() {
+        List<Author> authors = getAuthors();
+        authors.stream()
+                .map(author -> author.getName())
+                .distinct()
+                .forEach(authorName -> System.out.println(authorName));
+    }
+
+    /**
+     * count(): 返回流中元素的个数
+     *      需求：打印所有作家所出的书籍的总和，需要去重
+     */
+    private static void test10() {
+        List<Author> authors = getAuthors();
+        long count = authors.stream()
+                .map(author -> author.getBooks())
+                .flatMap(books -> books.stream())
+                .distinct()
+                .count();
+        System.out.println(count);
+    }
+
+    /**
+     * max(): 返回流中的最大值；min(): 返回流中的最小值
+     *      需求：分别获取这些作家的所出书籍的最高评分和最低评分，并打印
+     */
+    private static void test11() {
+        List<Author> authors = getAuthors();
+        Optional<Integer> max = authors.stream()
+                .flatMap(author -> author.getBooks().stream())
+                .distinct()
+                .map(book -> book.getScore())
+                .max(((o1, o2) -> o1 - o2));
+
+        Optional<Integer> min = authors.stream()
+                .flatMap(author -> author.getBooks().stream())
+                .distinct()
+                .map(book -> book.getScore())
+                .min(((o1, o2) -> o1 - o2));
+
+        System.out.println("min = " + min.get());
+        System.out.println("max = " + max.get());
+    }
+
+    /**
+     * collect(): 将流中的元素收集到一个集合中，例如：List、Set 或 Map
+     *      需求1：获取一个所有作者名字的 List 集合
+     *      需求2: 获取一个 Map 集合，Map 的 key 为作家名，value 为 List<Book>
+     */
+    private static void test12() {
+        // 需求1：获取一个所有作者名字的 List 集合
+        List<String> authorNames = getAuthors().stream()
+                .map(author -> author.getName())
+                .distinct()
+                .collect(Collectors.toList());
+
+        authorNames.stream().forEach(System.out::println);
+
+        // 需求2: 获取一个 Map 集合，Map 的 key 为作家名，value 为 List<Book>
+        Map<String, List<Book>> authorMap = getAuthors().stream()
+                .distinct()
+                .collect(Collectors.toMap(Author::getName, Author::getBooks));
+
+        authorMap.entrySet().stream().forEach(System.out::println);
+    }
+
+    /**
+     * anyMatch(): 流中是否存在满足指定条件的元素
+     * allMatch(): 流中的元素是否全部满足指定条件
+     * noneMatch(): 流中的元素是否全部都不满足指定条件
+     *      需求：判断是否有年龄在 29 以上的作家
+     */
+    private static void test13() {
+        boolean anyMatch = getAuthors().stream()
+                .anyMatch(author -> author.getAge() > 29);
+
+        System.out.println("anyMatch: " + anyMatch);
+    }
+
+    /**
+     * findFirst(): 获取流中的第一个元素
+     * findAny(): 随机获取流中的一个元素
+     *      需求：获取一个年龄最小的作家，并打印他的姓名
+     */
+    private static void test14() {
+        Optional<Author> first = getAuthors().stream()
+                .distinct()
+                .sorted(new Comparator<Author>() {
+                    @Override
+                    public int compare(Author o1, Author o2) {
+                        return o1.getAge() - o2.getAge();
+                    }
+                })
+                .findFirst();
+        first.ifPresent(author -> System.out.println(author.getName()));
+    }
+
+    /**
+     * reduce(): 对流中的元素进行归约操作，可以用于求和、求最大值、最小值等
+     *      需求1：使用 reduce() 求所有作者的年龄之和
+     *      需求2：使用 reduce() 求所有作者中年龄的最大值
+     *      需求3：使用 reduce() 求所有作者中年龄的最小值
+     */
+    private static void test15() {
+        Integer sum = getAuthors().stream()
+                .distinct()
+                .map(author -> author.getAge())
+                .reduce(0, new BinaryOperator<Integer>() {
+                    @Override
+                    public Integer apply(Integer result, Integer element) {
+                        return result + element;
+                    }
+                });
+        System.out.println(sum);
+    }
+
     private static List<Author> getAuthors() {
         Author author1 = new Author(1L, "张三1", 33, "一个作者张三1", null);
         Author author2 = new Author(2L, "张三2", 15, "一个作者张三2", null);
@@ -210,7 +332,6 @@ public class StreamTest {
         author2.setBooks(books2);
         author3.setBooks(books3);
         author4.setBooks(books3);
-
 
         return new ArrayList<>(Arrays.asList(author1, author2, author3, author4));
     }
