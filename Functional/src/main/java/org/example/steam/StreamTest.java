@@ -9,7 +9,7 @@ import java.util.stream.Stream;
 public class StreamTest {
 
     public static void main(String[] args) {
-        test01();
+        test06();
     }
 
     /**
@@ -78,7 +78,6 @@ public class StreamTest {
      */
     private static void test03() {
         List<Author> authors = getAuthors();
-
         authors.stream()
                 .distinct()
                 // 中间操作：对流中的元素进行去重，依赖于 String 类的 compareTo()
@@ -120,7 +119,7 @@ public class StreamTest {
     /**
      * limit()：用于截断流，保留指定数量的元素，超出的部分直接抛弃
      *      skip 则用于跳过指定数量的元素
-     *      需求：将作家按年龄降序排序，并切不能有重复元素，然后打印年龄最大的两个作家的姓名
+     *      需求：将作家按年龄降序排序，并且不能有重复元素，然后打印年龄最大的两个作家的姓名
      */
     private static void test06() {
         List<Author> authors = getAuthors();
