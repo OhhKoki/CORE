@@ -16,11 +16,12 @@ Java 8 中的 Stream 是对集合（Collection）对象功能的增强，它专�
 
 ```java
 List<Integer> numberList = List.of(3, 4, 5, 5);
+
 // 创建流
 numberList.stream()
-  // 中间操作：去重
+  // 中间操作
   .distinct()
-  // 终结操作：遍历打印
+  // 终结操作
   .forEach(System.out::println);
 ```
 
@@ -69,11 +70,6 @@ Arrays.stream(numberArray)
   .distinct()
   // 终结操作
 	.forEach(System.out::println);
-
--- 输出结果
-2
-3
-4
 ```
 
 
@@ -145,6 +141,68 @@ entries.stream()
 
 
 # 3）中间操作
+
+一个流可以后面跟随零个或多个 intermediate 操作。其目的主要是打开流，做出某种程度的数据映射/过滤，然后返回一个新的流，交给下一个操作使用。这类操作都是惰性化的（lazy），就是说，仅仅调用到这类方法，并没有真正开始流的遍历。
+
+
+
+常见的操作如下：
+
+- distinct & filter
+
+- map & flatMap
+- sort
+- limit & skip
+- findFirst & findAny
+- max & min & count
+- foreach & collect
+
+
+
+## 3.1）distinct
+
+过滤重复的元素，依赖于 Object 的 equals()
+
+
+
+案例如下（去除重复的作家，并打印作家的姓名
+
+```java
+List<Author> authors = getAuthors();
+
+authors.stream()
+        // 中间操作：对流中的元素进行去重
+        .distinct()
+        // 终结操作：遍历流中的各个元素
+        .forEach(author -> System.out.println(author.getName()));
+```
+
+
+
+## 3.2）filter
+
+根据指定的条件进行过滤元素，只保留满足条件的元素
+
+
+
+案例如下（过滤重复的作家 & 过滤年龄小于18的作家，并打印作家的姓名
+
+```java
+List<Author> authors = getAuthors();
+
+authors.stream()
+        .distinct()
+        // 中间操作：对流中的元素进行去重
+        .filter(author -> author.getAge() < 18)
+        // 终结操作：遍历流中的各个元素
+        .forEach(author -> System.out.println(author.getName()));
+```
+
+
+
+
+
+
 
 
 
