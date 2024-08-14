@@ -187,7 +187,7 @@ public class StreamTest {
     }
 
     /**
-     * forEach():
+     * forEach(): 方法接收一个 Lambda 表达式，然后在 Stream 的每一个元素上执行该表达式
      *      需求：打印所有作家的名字，并且去重
      */
     private static void test09() {
@@ -230,8 +230,8 @@ public class StreamTest {
                 .map(book -> book.getScore())
                 .min(((o1, o2) -> o1 - o2));
 
-        System.out.println("min = " + min.get());
-        System.out.println("max = " + max.get());
+        System.out.println("min = " + min.orElse(0));
+        System.out.println("max = " + max.orElse(0));
     }
 
     /**

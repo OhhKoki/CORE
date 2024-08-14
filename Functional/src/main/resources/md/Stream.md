@@ -148,14 +148,11 @@ entries.stream()
 
 常见的操作如下：
 
-- distinct & filter
-
+- distinct
+- filter
 - map & flatMap
 - Sorted
 - limit & skip
-- findFirst & findAny
-- max & min & count
-- foreach & collect
 
 
 
@@ -380,3 +377,233 @@ authors.stream()
 
 # 4）终结操作
 
+一个流只能有一个 terminal 操作，当这个操作执行后，流就被使用「光」了，无法再被操作。所以这必定是流的最后一个操作。Terminal 操作的执行，才会真正开始流的遍历，并且会生成一个结果。
+
+
+
+常见终结操作操作如下
+
+- forEach
+- collect
+- max & min
+- count
+- anyMatch & allMatch & noneMatch
+- findFirst & findAny
+-  iterator
+
+
+
+## 4.1）forEach
+
+接收一个 Lambda 表达式，然后在 Stream 的每一个元素上执行该表达式（即：遍历
+
+
+
+案例如下（打印所有作家的名字，并且去重
+
+```java
+List<Author> authors = getAuthors();
+
+authors.stream()
+    .map(author -> author.getName())
+    .distinct()
+    .forEach(authorName -> System.out.println(authorName));
+```
+
+
+
+执行 forEach() 的效果如下
+
+![image-20240814122349807](assets/image-20240814122349807.png)
+
+
+
+## 4.2）count
+
+返回流中元素的个数
+
+
+
+案例如下（打印所有作家的名字，并且去重
+
+```java
+List<Author> authors = getAuthors();
+
+long count = authors.stream()
+		.map(author -> author.getBooks())
+    .flatMap(books -> books.stream())
+    .distinct()
+    .count();
+```
+
+
+
+执行 count() 的效果如下
+
+![image-20240814122651551](assets/image-20240814122651551.png)
+
+
+
+## 4.3）max & min
+
+max()：返回流中的最大值；
+
+min()：返回流中的最小值
+
+
+
+案例如下（分别获取这些作家的所出书籍的最高评分和最低评分，并打印
+
+```java
+List<Author> authors = getAuthors();
+
+Optional<Integer> max = authors.stream()
+    .flatMap(author -> author.getBooks().stream())
+    .distinct()
+    .map(book -> book.getScore())
+    .max(((o1, o2) -> o1 - o2));
+
+Optional<Integer> min = authors.stream()
+    .flatMap(author -> author.getBooks().stream())
+    .distinct()
+    .map(book -> book.getScore())
+    .min(((o1, o2) -> o1 - o2));
+
+System.out.println("min = " + min.orElse(0));
+System.out.println("max = " + max.orElse(0));
+```
+
+
+
+执行 max() 的效果如下
+
+![image-20240814123010683](assets/image-20240814123010683.png)
+
+
+
+## 4.4）collect
+
+将流中的元素收集到一个集合中，例如：List、Set 或 Map
+
+
+
+案例如下
+
+- 获取一个所有作者名字的 List 集合
+
+*      获取一个 Map 集合，Map 的 key 为作家名，value 为 List<Book>
+
+```java
+// 需求1：获取一个所有作者名字的 List 集合
+List<String> authorNames = getAuthors().stream()
+    .map(author -> author.getName())
+    .distinct()
+    .collect(Collectors.toList());
+
+authorNames.stream().forEach(System.out::println);
+
+// 需求2: 获取一个 Map 集合，Map 的 key 为作家名，value 为 List<Book>
+Map<String, List<Book>> authorMap = getAuthors().stream()
+    .distinct()
+    .collect(Collectors.toMap(Author::getName, Author::getBooks));
+
+authorMap.entrySet().stream().forEach(System.out::println);
+```
+
+
+
+执行后 toList() 后，效果如下图
+
+![image-20240814123400963](assets/image-20240814123400963.png)
+
+
+
+执行后 toMap() 后，效果如下图
+
+![image-20240814123414177](assets/image-20240814123414177.png)
+
+
+
+## 4.5）anyMatch & allMatch & noneMatch
+
+anyMatch(): 流中是否存在满足指定条件的元素
+
+allMatch(): 流中的元素是否全部满足指定条件
+
+noneMatch(): 流中的元素是否全部都不满足指定条件
+
+
+
+案例如下（判断是否有年龄在 29 以上的作家
+
+```java
+boolean anyMatch = getAuthors().stream().anyMatch(author -> author.getAge() > 29);
+```
+
+
+
+执行后 toList() 后，效果如下图
+
+![image-20240814123731028](assets/image-20240814123731028.png)
+
+
+
+## 4.6）findFirst & findAny
+
+findFirst(): 获取流中的第一个元素
+
+findAny(): 随机获取流中的一个元素
+
+
+
+案例如下（获取一个年龄最小的作家，并打印他的姓名
+
+```java
+Optional<Author> first = getAuthors().stream()
+    .distinct()
+    .sorted(new Comparator<Author>() {
+        @Override
+        public int compare(Author o1, Author o2) {
+            return o1.getAge() - o2.getAge();
+        }
+    })
+    .findFirst();
+
+first.ifPresent(author -> System.out.println(author.getName()));
+```
+
+
+
+执行 findFirst() 的效果如下
+
+![image-20240814124206977](assets/image-20240814124206977.png)
+
+
+
+## 4.7）reduce
+
+对流中的元素进行归约操作，可以用于求和、求最大值、最小值等
+
+
+
+案例如下（获取一个年龄最小的作家，并打印他的姓名
+
+```java
+Integer sum = getAuthors().stream()
+    .distinct()
+    .map(author -> author.getAge())
+    .reduce(0, new BinaryOperator<Integer>() {
+        @Override
+        public Integer apply(Integer result, Integer element) {
+            return result + element;
+        }
+    });
+
+System.out.println(sum);
+```
+
+
+
+执行 reduce() 的效果如下
+
+![image-20240814124406785](assets/image-20240814124406785.png)
