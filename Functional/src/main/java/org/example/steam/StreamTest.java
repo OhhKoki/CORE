@@ -9,7 +9,7 @@ import java.util.stream.Stream;
 public class StreamTest {
 
     public static void main(String[] args) {
-        test15();
+        test01();
     }
 
     /**
