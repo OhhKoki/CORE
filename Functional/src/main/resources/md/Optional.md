@@ -145,3 +145,156 @@ Optional 中的方法很多，这里只记录最最最推荐的方法
 
     - Optional<U> map(Function<? super T, ? extends U> mapper)
     - Optional<U> flatMap(Function<? super T, ? extends Optional<? extends U>> mapper)
+
+
+
+## 3.1) 安全消费
+
+ifPresent()：如果 Optional 的 value 不为 null，则执行传入的消费者函数
+
+```java
+// 由于 nullOptional 的 value 值为 null，所以调用 ifPresent() 时不会执行
+Optional<String> nullOptional = Optional.ofNullable(null);
+nullOptional.ifPresent(System.out::println);
+
+System.out.println("----------");
+
+Optional<String> nonEmptyOptional = Optional.ofNullable("Hello");
+nonEmptyOptional.ifPresent(System.out::println);
+```
+
+执行结果
+
+```java
+----------
+Hello
+```
+
+
+
+## 3.2) 安全获取
+
+orElseGet() 和 orElseThrow() 的作用是类似的，都是当 Optional 的 value 值为 null 时，做一个默认处理。两者的区别在于：
+
+- orElseGet()：返回一个默认值
+- orElseThrow()：抛出一个异常
+
+### 1）orElseGet
+
+如果 Optional 的 value 不为 null，则返回 value 值，为 null 则执行传入的供给者函数
+
+```java
+// 由于 nullOptional 的 value 值为 null，所以执行传入的供给者函数（返回一个默认值 default1
+Optional<String> nullOptional = Optional.ofNullable(null);
+System.out.println(nullOptional.orElseGet(() -> "default1"));
+
+Optional<String> nonEmptyOptional = Optional.ofNullable("Hello");
+System.out.println(nonEmptyOptional.orElseGet(() -> "default2"));
+```
+
+执行结果
+
+```java
+default1
+Hello
+```
+
+
+
+### 2）orElseThrow
+
+如果 Optional 的 value 不为 null，则返回 value 值，为 null 则执行传入的供给者函数（抛出一个异常
+
+```java
+// 由于 nullOptional 的 value 值为 null，所以抛出异常
+Optional<String> nullOptional = Optional.ofNullable(null);
+Optional<String> nonEmptyOptional = Optional.ofNullable("Hello");
+
+try {
+    nullOptional.orElseThrow(() -> new RuntimeException("获取 nullOptional 时出现异常！"));
+    nonEmptyOptional.orElseThrow(() -> new RuntimeException("获取 nonEmptyOptional 时出现异常！"));
+}catch (Exception e) {
+    System.out.println(e.getMessage());
+}
+```
+
+执行结果
+
+```java
+获取 nonEmptyOptional 时出现异常！
+```
+
+
+
+## 3.4) 过滤数据
+
+filter()：如果当前 Optional 不符合 filter 的过滤条件，则返回 Optional.empty
+
+```java
+Optional<Author> authorOptional = getAuthor();
+authorOptional
+    // 如果当前 Optional 不符合 filter 的过滤条件，则返回 Optional.empty
+    .filter(author -> author.getAge() > 18)
+    .ifPresent(author -> System.out.println(author.getName()));
+```
+
+执行结果
+
+```java
+张三
+```
+
+
+
+## 3.5) 非空判断
+
+ifPresent()：判断 Optional 的 value 属性是否为 null，如果不为 null，则返回 true
+
+```java
+boolean present = Optional.ofNullable(null).isPresent();
+System.out.println(present);
+```
+
+执行结果
+
+```java
+false
+```
+
+
+
+## 3.6) 数据转换
+
+map() 和 flatMap() 的作用基本一致，两者区别在于 Map方法会讲返回结果封装到 Optional 中，而 flatMap 则是直接返回
+
+```java
+public <U> Optional<U> map(Function<? super T, ? extends U> mapper) {
+    Objects.requireNonNull(mapper);
+    if (!isPresent()) {
+        return empty();
+    } else {
+        return Optional.ofNullable(mapper.apply(value));
+    }
+}
+```
+
+
+
+### 1）map()
+
+数据转换，对 Optional 执行传入的消费者函数
+
+```java
+Optional<Author> authorOptional = getAuthor();
+authorOptional.map(Author::getBooks).ifPresent(System.out::println);
+```
+
+执行结果
+
+```java
+[Book(id=1, name=书本1, category=哲学,爱情, score=88, intro=这是书本1), Book(id=2, name=书本2, category=个人,爱情, score=99, intro=这是书本2)]
+```
+
+
+
+### 2）flatMap()

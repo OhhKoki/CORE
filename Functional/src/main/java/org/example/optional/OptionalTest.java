@@ -1,14 +1,14 @@
 package org.example.optional;
 
 import org.example.steam.Author;
-
+import org.example.steam.Book;
 import java.util.List;
 import java.util.Optional;
 
 public class OptionalTest {
 
     public static void main(String[] args) {
-        test05();
+        test07();
     }
 
     /**
@@ -74,6 +74,9 @@ public class OptionalTest {
         }
     }
 
+    /**
+     * filter()：如果当前 Optional 不符合 filter 的过滤条件，则返回 Optional.empty
+     */
     private static void test05() {
         Optional<Author> authorOptional = getAuthor();
         authorOptional
@@ -82,8 +85,28 @@ public class OptionalTest {
                 .ifPresent(author -> System.out.println(author.getName()));
     }
 
+    /**
+     * isPresent()：判断 Optional 的 value 属性是否为 null，如果不为 null，则返回 true
+     */
+    private static void test06() {
+        boolean present = Optional.ofNullable(null).isPresent();
+        System.out.println(present);
+    }
+
+    /**
+     * map()：数据转换，对 Optional 执行传入的消费者函数
+     */
+    private static void test07() {
+        Optional<Author> authorOptional = getAuthor();
+        authorOptional.map(Author::getBooks)
+                .ifPresent(System.out::println);
+    }
+
     private static Optional<Author> getAuthor() {
         Author author = new Author(1L, "张三", 33, "一个作者张三", null);
+        Book book1 = new Book(1L, "书本1", "哲学,爱情", 88, "这是书本1");
+        Book book2 = new Book(2L, "书本2", "个人,爱情", 99, "这是书本2");
+        author.setBooks(List.of(book1, book2));
         return Optional.ofNullable(author);
     }
 
