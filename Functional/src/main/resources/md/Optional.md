@@ -27,14 +27,6 @@ if (user != null) {
 
 
 
-使用 Optional 优化上述案例
-
-```java
-Optional.ofNullable(user).
-```
-
-
-
 # 2）创建 Optional 对象
 
 创建 Optional 的三种方式有三种
@@ -163,13 +155,6 @@ Optional<String> nonEmptyOptional = Optional.ofNullable("Hello");
 nonEmptyOptional.ifPresent(System.out::println);
 ```
 
-执行结果
-
-```java
-----------
-Hello
-```
-
 
 
 ## 3.2) 安全获取
@@ -177,7 +162,10 @@ Hello
 orElseGet() 和 orElseThrow() 的作用是类似的，都是当 Optional 的 value 值为 null 时，做一个默认处理。两者的区别在于：
 
 - orElseGet()：返回一个默认值
+
 - orElseThrow()：抛出一个异常
+
+    
 
 ### 1）orElseGet
 
@@ -190,13 +178,6 @@ System.out.println(nullOptional.orElseGet(() -> "default1"));
 
 Optional<String> nonEmptyOptional = Optional.ofNullable("Hello");
 System.out.println(nonEmptyOptional.orElseGet(() -> "default2"));
-```
-
-执行结果
-
-```java
-default1
-Hello
 ```
 
 
@@ -218,12 +199,6 @@ try {
 }
 ```
 
-执行结果
-
-```java
-获取 nonEmptyOptional 时出现异常！
-```
-
 
 
 ## 3.4) 过滤数据
@@ -238,12 +213,6 @@ authorOptional
     .ifPresent(author -> System.out.println(author.getName()));
 ```
 
-执行结果
-
-```java
-张三
-```
-
 
 
 ## 3.5) 非空判断
@@ -253,12 +222,6 @@ ifPresent()：判断 Optional 的 value 属性是否为 null，如果不为 null
 ```java
 boolean present = Optional.ofNullable(null).isPresent();
 System.out.println(present);
-```
-
-执行结果
-
-```java
-false
 ```
 
 
@@ -287,12 +250,6 @@ public <U> Optional<U> map(Function<? super T, ? extends U> mapper) {
 ```java
 Optional<Author> authorOptional = getAuthor();
 authorOptional.map(Author::getBooks).ifPresent(System.out::println);
-```
-
-执行结果
-
-```java
-[Book(id=1, name=书本1, category=哲学,爱情, score=88, intro=这是书本1), Book(id=2, name=书本2, category=个人,爱情, score=99, intro=这是书本2)]
 ```
 
 
