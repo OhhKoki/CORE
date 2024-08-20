@@ -647,6 +647,20 @@ if (user != null) {
 
 
 
+对于上述案例，使用 Optional 简化
+
+```java
+Optional.of(user)
+    .map(User::getAddress)
+    .map(Address::getCountry)
+    .map(Country::getIsocode)
+    .ifPresent(String::toUpperCase);
+```
+
+
+
+
+
 ## 1）创建 Optional 对象
 
 创建 Optional 的三种方式有三种
@@ -821,7 +835,7 @@ try {
 
 
 
-### 3.4) 过滤数据
+### 2.4) 过滤数据
 
 filter()：如果当前 Optional 不符合 filter 的过滤条件，则返回 Optional.empty
 
@@ -835,7 +849,7 @@ authorOptional
 
 
 
-### 3.5) 非空判断
+### 2.5) 非空判断
 
 ifPresent()：判断 Optional 的 value 属性是否为 null，如果不为 null，则返回 true
 
@@ -846,7 +860,7 @@ System.out.println(present);
 
 
 
-### 3.6) 数据转换
+### 2.6) 数据转换
 
 map() 和 flatMap() 的作用基本一致，两者区别在于 Map方法会将函数执行结果封装到 Optional 中，然后返回
 
@@ -882,8 +896,6 @@ public <U> Optional<U> flatMap(Function<? super T, ? extends Optional<? extends 
 
 
 
-
-
 #### 1）map()
 
 如果 Optional 的 value 不为 null，则执行传入的 `Function` 接口
@@ -909,4 +921,54 @@ Optional.ofNullable("hello")
     .flatMap(value -> Optional.ofNullable(value.toUpperCase()))
     .ifPresent(System.out::println);  // HELLO
 ```
+
+
+
+### 2.7) 使用案例
+
+多层级嵌套结构
+
+```java
+class Outer {
+    Nested nested;
+    Nested getNested() {
+        return nested;
+    }
+}
+
+class Nested {
+    Inner inner;
+    Inner getInner() {
+        return inner;
+    }
+}
+
+class Inner {
+    String foo;
+    String getFoo() {
+        return foo;
+    }
+}
+```
+
+Java8 以前
+
+```java
+Outer outer = new Outer();
+if (outer != null && outer.nested != null && outer.nested.inner != null) {
+    System.out.println(outer.nested.inner.foo);
+}
+```
+
+Java8 以后
+
+```java
+Optional.of(new Outer())
+    .map(Outer::getNested)
+    .map(Nested::getInner)
+    .map(Inner::getFoo)
+    .ifPresent(System.out::println);
+```
+
+
 
