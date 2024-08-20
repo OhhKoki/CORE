@@ -8,7 +8,7 @@ import java.util.Optional;
 public class OptionalTest {
 
     public static void main(String[] args) {
-        test07();
+        test08();
     }
 
     /**
@@ -94,11 +94,24 @@ public class OptionalTest {
     }
 
     /**
-     * map()：数据转换，对 Optional 执行传入的消费者函数
+     * map()：如果 Optional 的 value 不为 null，则执行传入的 Function 接口
+     *      - 如果 Function 接口返回值不为 null，则将返回值封装到 Optional 并返回
+     *      - 如果 Function 接口返回值为 null，则返回 Optional.empty
      */
     private static void test07() {
         Optional<Author> authorOptional = getAuthor();
         authorOptional.map(Author::getBooks)
+                .ifPresent(System.out::println);
+    }
+
+    /**
+     * flatMap()：
+     *      如果 Optional 的 value 不为 null，则执行传入的 Function 接口，并返回 Optional 类型返回值
+     *      如果 Optional 的 value 为 null，否则返回 Optional.empty
+     */
+    private static void test08() {
+        Optional.ofNullable("hello")
+                .flatMap(value -> Optional.ofNullable(value.toUpperCase()))
                 .ifPresent(System.out::println);
     }
 
