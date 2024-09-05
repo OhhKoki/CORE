@@ -265,7 +265,6 @@ public class StreamTest {
     private static void test13() {
         boolean anyMatch = getAuthors().stream()
                 .anyMatch(author -> author.getAge() > 29);
-
         System.out.println("anyMatch: " + anyMatch);
     }
 
