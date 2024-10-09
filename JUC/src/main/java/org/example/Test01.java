@@ -6,6 +6,7 @@ import java.util.concurrent.FutureTask;
 
 /**
  * 创建线程的三种方式
+ *      DXHC58-RZDV3Z-R7DRTA-DUA696
  */
 @Slf4j(topic = "c.Test01")
 public class Test01 {
