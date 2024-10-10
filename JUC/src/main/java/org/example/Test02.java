@@ -13,7 +13,7 @@ public class Test02 {
     private static int r2 = 2;
 
     public static void main(String[] args) {
-        method03();
+        method04();
     }
 
     /**
