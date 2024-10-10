@@ -13,7 +13,7 @@ public class Test02 {
     private static int r2 = 2;
 
     public static void main(String[] args) {
-        method08();
+        method03();
     }
 
     /**
@@ -75,6 +75,7 @@ public class Test02 {
 
         thread1.start();
         thread2.start();
+
         try {
             // 需要等待子线程执行完毕
             thread2.join();
@@ -82,36 +83,34 @@ public class Test02 {
         } catch (InterruptedException e) {
             log.error(e.getMessage());
         }
-        System.out.println("r1 = " + r1);
-        System.out.println("r2 = " + r2);
+
+        log.debug("r1 = {}", r1);
+        log.debug("r2 = {}", r2);
     }
 
     /**
-     * interrupt()
+     * interrupt() & interrupted() & isInterrupted()
      */
     private static void method04() {
-        Thread thread = new Thread(() -> {
-            try {
-                log.debug("子线程进入休眠");
-                Thread.sleep(3000);
-            } catch (InterruptedException e) {
-                log.error(e.getMessage());
-            }
-            log.debug("子线程执行结束");
-        });
-        thread.start();
-        try {
-            // 防止子线程还没休眠就开始打断
-            log.debug("主线程进入休眠");
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            log.error(e.getMessage());
-        }
-        log.debug("主线程休眠结束");
-        thread.interrupt();
-        // sleep, wait, join 被打断后会清除标记
-        log.debug("子线程是否被 Interrupt 过：{}", thread.isInterrupted());
-        log.debug("主线程执行结束");
+        Thread t1 = new Thread(() -> {
+            log.debug("t1 线程启动");
+        }, "t1");
+        t1.start();
+        t1.interrupt();
+
+        log.debug("第一次调用 t1.isInterrupted(): {}", t1.isInterrupted());
+        log.debug("第二次调用 t1.isInterrupted(): {}", t1.isInterrupted());
+
+        // 注意，Thread.interrupted() 作用于当前正在执行的线程，此处是 main 线程，而不是 t1 线程！！！
+        log.debug("第一次调用 Thread.interrupted(): {}", Thread.interrupted());
+        log.debug("第二次调用 Thread.interrupted(): {}", Thread.interrupted());
+
+        // interrupt() 作用于 main 线程
+        Thread.currentThread().interrupt();
+        log.debug("第一次调用 Thread.interrupted(): {}", Thread.interrupted());
+        log.debug("第二次调用 Thread.interrupted(): {}", Thread.interrupted());
+
+        log.debug("main 线程执行结束");
     }
 
     /**
