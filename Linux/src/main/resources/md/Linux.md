@@ -280,7 +280,7 @@ touch file1.txt
 
 #### 3.09 `chmod` - 更改文件权限
 
-`cchmod mode name` 命令用于更改文件或目录的权限。
+`chmod [params] mode name` 命令用于更改文件或目录的权限。
 
 **参数：**
 
@@ -289,11 +289,32 @@ touch file1.txt
 **示例：**
 
 ```bash
+# 为 file1.txt 增加当前用户的 执行 权限
+chmod u+x file1.txt
+
 # 将文件权限设置为755
 chmod 755 file1.txt
 
 # 递归更改目录权限
 chmod -R 755 /path/to/directory
+
+
+mode 由以下三部分一起组成：（例如：[a+rx]、[u+x]、[u-x]
+
+  文件的【读写执行】权限：
+    r：表示读取权限（Read）
+    w：表示写入权限（Write）
+    x：表示执行权限（Execute）
+
+  文件的【角色】权限：
+    所有者权限（User，u）
+    用户组权限（Group，g）
+    其他用户权限（Others，o）
+
+  使用符号模式修改权限
+    +：添加权限
+    -：删除权限
+    =：设置权限（覆盖之前的权限）
 ```
 
 
