@@ -455,7 +455,55 @@ ps -u username
 
 
 
-#### 3.17 `kill` 和 `killall` - 终止进程
+#### 3.17 `grep` - 搜索字符串
+
+`grep [params] pattern [file]` 命令用于在文件或输出中搜索特定字符串。
+
+**参数：**
+
+- `-i`：忽略大小写。
+- `-r`：递归搜索目录中的文件。
+
+**示例：**
+
+```bash
+# 在文件中搜索字符串 "repository"
+grep "repository" settings.xml
+
+# 忽略大小写搜索
+grep -i "repository" settings.xml
+
+# 递归搜索目录中的文件
+grep -r "repository" settings.xml
+```
+
+
+
+#### 3.18 `｜管道符` - 输出作为输出
+
+管道符 `|` 是  `Linux` 系统中的一种命令行工具，用于将一个命令的输出传递给另一个命令作为输入。它将前一个命令的`标准输出`与下一个命令的`标准输入`连接起来，实现命令链式操作。
+
+**用法：**
+
+```bash
+command1 | command2
+```
+
+**示例：**
+
+```bash
+# 将 head 命令返回的结果作为 grep 的输出参数
+head -n 20 ./settings.xml | grep -i "Apache"
+
+# 只返回包含 "toolchains" 的文件
+ls -la | grep "toolchains"
+```
+
+
+
+
+
+#### 3.19 `kill` 和 `killall` - 终止进程
 
 `kill [params] PID` 命令用于通过进程ID终止进程，而 `killall processname` 命令用于根据进程名终止所有匹配的进程。
 
@@ -478,31 +526,9 @@ killall httpd
 
 
 
-#### 3.18 `grep` - 搜索字符串
-
-`grep [params] pattern file` 命令用于在文件或输出中搜索特定字符串。
-
-**参数：**
-
-- `-i`：忽略大小写。
-- `-r`：递归搜索目录中的文件。
-
-**示例：**
-
-```bash
-# 在文件中搜索字符串 "repository"
-grep "repository" settings.xml
-
-# 忽略大小写搜索
-grep -i "repository" settings.xml
-
-# 递归搜索目录中的文件
-grep -r "repository" settings.xml
-```
 
 
-
-#### 3.19 `ssh` - 远程安全登录
+#### 3.20 `ssh` - 远程安全登录
 
 `ssh [params] username@hostname` 命令用于通过安全外壳协议（SSH）远程登录到另一台Linux服务器。
 
@@ -526,7 +552,7 @@ ssh -i ~/.ssh/id_rsa user@remote_server
 
 
 
-#### 3.20 `service` - 管理系统服务
+#### 3.21 `service` - 管理系统服务
 
 `service servicename params` 命令用于启动、停止、重启或查看系统服务的状态。
 
@@ -555,7 +581,7 @@ service apache2 status
 
 
 
-#### 3.21 `wget` - 下载文件
+#### 3.22 `wget` - 下载文件
 
 `wget [params] url` 命令用于从网络中下载文件，支持HTTP、HTTPS和FTP协议。
 
@@ -580,7 +606,7 @@ wget -c http://example.com/file.zip
 
 
 
-#### 3.22 `curl` - 数据传输工具
+#### 3.23 `curl` - 数据传输工具
 
 `curl [params] url` 命令用于通过多种协议传输数据，常用于HTTP请求。
 
@@ -607,7 +633,7 @@ curl -X POST -d "name=user&password=123" http://example.com/login
 
 
 
-#### 3.23 `top` - 实时显示资源使用率
+#### 3.24 `top` - 实时显示资源使用率
 
 `top [params]` 命令用于动态显示系统中进程的资源使用情况，如CPU、内存、运行时间等。
 
