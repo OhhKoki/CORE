@@ -47,7 +47,7 @@ Optional.of(user)
 
     ​    
 
-**ofNullable()**
+#### 2.1 ofNullable()
 
 使用静态方法 `ofNullable()` 创建一个即可空又可非空的 Optional 对象
 
@@ -66,7 +66,7 @@ public static <T> Optional<T> ofNullable(T value) {
 
 
 
-**of()**
+#### 2.2 of()
 
 使用静态方法 `of()` 创建一个非空的 Optional 对象
 
@@ -83,7 +83,7 @@ Optional<String> optnull = Optional.of(null);
 
 
 
-**empty()**
+#### 2.3 empty()
 
 使用静态方法 `empty()` 创建一个空的 Optional 对象
 
