@@ -23,11 +23,7 @@ if (user != null) {
 }
 ```
 
-为了解决由于 null 导致的过多检查，Java 8 引入 Optional 类。本质上，这是一个包含有可选值的包装类，这意味着 Optional 类既可以含有对象也可以为空。
-
-
-
-对于上述案例，使用 Optional 简化
+为了解决由于 null 导致的过多检查，Java 8 引入 Optional 类。本质上，这是一个包含有可选值的包装类，这意味着 Optional 类既可以含有对象也可以为空。对于上述案例，使用 Optional 简化如下：
 
 ```java
 Optional.of(user)
@@ -51,7 +47,7 @@ Optional.of(user)
 
     ​    
 
-#### 2.1 ofNullable
+**ofNullable()**
 
 使用静态方法 `ofNullable()` 创建一个即可空又可非空的 Optional 对象
 
@@ -70,7 +66,7 @@ public static <T> Optional<T> ofNullable(T value) {
 
 
 
-#### 2.2 of
+**of()**
 
 使用静态方法 `of()` 创建一个非空的 Optional 对象
 
@@ -87,7 +83,7 @@ Optional<String> optnull = Optional.of(null);
 
 
 
-#### 2.3 empty
+**empty()**
 
 使用静态方法 `empty()` 创建一个空的 Optional 对象
 
@@ -144,7 +140,7 @@ Optional 中的方法很多，这里只记录常用推荐的方法
 
 
 
-### 2.1) 安全消费
+#### 3.1 安全消费
 
 ifPresent()：如果 Optional 的 value 不为 null，则执行传入的消费者函数
 
@@ -161,7 +157,7 @@ nonEmptyOptional.ifPresent(System.out::println);
 
 
 
-### 2.2) 安全获取
+#### 3.2 安全获取
 
 orElseGet() 和 orElseThrow() 的作用是类似的，都是当 Optional 的 value 值为 null 时，做一个默认处理。两者的区别在于：
 
@@ -169,9 +165,9 @@ orElseGet() 和 orElseThrow() 的作用是类似的，都是当 Optional 的 val
 
 - orElseThrow()：执行 `Supplier` 函数，抛出一个异常
 
-      
+  ​    
 
-#### 1）orElseGet
+**orElseGet**
 
 如果 Optional 的 value 不为 null，则返回 value 值，为 null 则执行传入的供给者函数（翻译一个默认值
 
@@ -186,7 +182,7 @@ System.out.println(nonEmptyOptional.orElseGet(() -> "default2"));
 
 
 
-#### 2）orElseThrow
+**orElseThrow**
 
 如果 Optional 的 value 不为 null，则返回 value 值，为 null 则执行传入的供给者函数（抛出一个异常
 
@@ -205,7 +201,7 @@ try {
 
 
 
-### 2.4) 过滤数据
+#### 3.3 过滤数据
 
 filter()：如果当前 Optional 不符合 filter 的过滤条件，则返回 Optional.EMPTY
 
@@ -219,7 +215,7 @@ authorOptional
 
 
 
-### 2.5) 非空判断
+#### 3.4 非空判断
 
 ifPresent()：判断 Optional 的 value 属性是否为 null，如果不为 null，则返回 true
 
@@ -230,7 +226,7 @@ System.out.println(present);
 
 
 
-### 2.6) 数据转换
+#### 3.5 数据转换
 
 map() 和 flatMap() 的作用基本一致，两者区别在于 Map方法会将函数执行结果封装到 Optional 中，然后返回
 
@@ -245,8 +241,6 @@ public <U> Optional<U> map(Function<? super T, ? extends U> mapper) {
     }
 }
 ```
-
-
 
 而 flatMap 则是直接将执行结果返回，不做额外的封装（这个函数的存在是有必要的，因为有些函数的返回结果是 Optional<T>，如果使用使用 Map 进行处理，则会出现 Optional<Optional<T>>这种结构）
 
@@ -266,7 +260,7 @@ public <U> Optional<U> flatMap(Function<? super T, ? extends Optional<? extends 
 
 
 
-#### 1）map()
+**map()**
 
 如果 Optional 的 value 为 null, 则返回 Optional.EMPTY；非空则执行传入的 `Function` 接口，并将执行结果封装到 Optional 中。
 
@@ -277,7 +271,7 @@ authorOptional.map(Author::getBooks).ifPresent(System.out::println);
 
 
 
-#### 2）flatMap()
+**flatMap()**
 
 如果 Optional 的 value 为 null，则返回 Optional.EMPTY；非空则执行传入的 `Function` 接口（直接返回）
 
@@ -289,9 +283,9 @@ Optional.ofNullable("hello")
 
 
 
-### 2.7) 使用案例
+#### 3.6 使用案例
 
-多层级嵌套结构
+多层级嵌套结构使用 Optional 进行优化
 
 ```java
 class Outer {
