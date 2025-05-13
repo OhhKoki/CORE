@@ -9,9 +9,8 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <modules>
-        <module>JUC</module>
-        <module>Functional</module>
-        <module>Linux</module>
+        <module>Toolkit</module>
+        <module>DevOps</module>
     </modules>
 
     <properties>

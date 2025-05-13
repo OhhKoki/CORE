@@ -1,6 +1,7 @@
-package org.example;
+package org.example.juc;
 
 import lombok.extern.slf4j.Slf4j;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 
