@@ -609,6 +609,3 @@ System.out.println(sum);
 执行 reduce() 的效果如下
 
 ![image-20240814124406785](assets/image-20240814124406785.png)
-
-
-
