@@ -429,8 +429,7 @@ authors.stream()
 案例如下
 
 - 获取一个所有作者名字的 List 集合
-
-*      获取一个 Map 集合，Map 的 key 为作家名，value 为 List<Book>
+- 获取一个 Map 集合，Map 的 key 为作家名，value 为 List<Book>
 
 ```java
 // 需求1：获取一个所有作者名字的 List 集合
