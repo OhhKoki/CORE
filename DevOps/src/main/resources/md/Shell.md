@@ -684,3 +684,96 @@ while [ $count -le 5 ]; do
   ((count++))
 done
 ```
+
+
+
+### 10、函数
+
+在 Shell 中，函数是一组可以重复使用的命令或代码块，通常用于提高脚本的可读性和复用性。
+
+
+
+**Shell 中定义函数**
+
+```bash
+# 方式一：
+function function_name() {
+    commands
+}
+
+# 方式二：
+function function_name {
+    commands
+}
+
+# 方式三：
+function_name {
+    commands
+}
+```
+
+
+
+**Shell 函数的返回值**
+
+Shell 函数通常使用 `return` 来返回一个退出状态码（0 表示成功，非零表示错误），而无法像其他编程语言那样直接返回一个具体值。若要返回具体值，可以使用 `echo` 或将其赋值给一个变量。
+
+```bash
+function add() {
+    result=$((\$1 + \$2))
+    echo $result
+}
+```
+
+
+
+**Shell 函数的调用**
+
+```bash
+function_name
+```
+
+
+
+**Shell 函数的使用案例**
+
+```bash
+#!/bin/bash
+
+# 定义一个无参数的函数
+greet() {
+    echo "Hello, welcome to the Shell scripting world!"
+}
+
+# 调用 greet 函数
+greet
+
+# 定义一个有参数的函数
+sum() {
+    echo "Sum of \$1 and \$2 is: $((\$1 + \$2))"
+}
+
+# 调用 sum 函数，传入两个参数
+sum 5 10
+```
+
+
+
+**Shell 函数的使用案例 -- 带返回值**
+
+```bash
+#!/bin/bash
+
+# 定义一个计算两个数字和的函数，并返回结果
+calculate_sum() {
+    sum=$((\$1 + \$2))
+    echo $sum  # 输出结果
+}
+
+# 获取函数的返回值
+result=$(calculate_sum 7 8)
+echo "The sum is: $result"
+```
+
+
+
