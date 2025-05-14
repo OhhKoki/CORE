@@ -211,6 +211,8 @@ echo $C
 | $@       | 获取当前执行的 Shell 脚本所携带参数列表（使用 "$@" 时，会将所有的参数被视为一个 String）。 |
 | $*       | 获取当前执行的 Shell 脚本所携带参数列表                      |
 
+
+
 案例如下
 
 ```bash
@@ -246,8 +248,434 @@ p3
 
 
 
-### 6、条件判断
+### 6、运算符
+
+在 Shell 中，运算符用于进行不同类型的操作，如算术、逻辑、字符串操作等。以下是常见的 Shell 运算符
 
 
 
-### 7、运算符
+#### 6.1 算术运算符
+
+用于执行基本的数学运算。
+
+- `+`：加法
+- `-`：减法
+- `*`：乘法
+- `/`：除法
+- `%`：取余
+- `++`：自增
+- `--`：自减
+
+```bash
+#!/bin/bash
+a=10
+b=5
+sum=$((a + b))
+diff=$((a - b))
+prod=$((a * b))
+quot=$((a / b))
+rem=$((a % b))
+
+echo "Sum: $sum"
+echo "Difference: $diff"
+echo "Product: $prod"
+echo "Quotient: $quot"
+echo "Remainder: $rem"
+```
+
+
+
+#### 6.2 关系运算符
+
+用于比较两个数值或字符串。
+
+- `-eq`：等于
+- `-ne`：不等于
+- `-lt`：小于
+- `-le`：小于或等于
+- `-gt`：大于
+- `-ge`：大于或等于
+
+```bash
+#!/bin/bash
+a=10
+b=5
+
+if [ $a -gt $b ]; then
+  echo "$a is greater than $b"
+else
+  echo "$a is not greater than $b"
+fi
+```
+
+
+
+#### 6.3 逻辑运算符
+
+用于处理布尔逻辑操作。
+
+- `&&`：逻辑与（AND）
+- `||`：逻辑或（OR）
+- `!`：逻辑非（NOT）
+
+```bash
+#!/bin/bash
+a=10
+b=5
+
+if [ $a -gt $b ] && [ $b -gt 0 ]; then
+  echo "Both conditions are true"
+fi
+
+if [ $a -lt $b ] || [ $b -gt 0 ]; then
+  echo "At least one condition is true"
+fi
+```
+
+
+
+#### 6.4 字符串运算符
+
+用于比较字符串或连接字符串。
+
+- `=`：字符串相等
+- `!=`：字符串不相等
+
+```bash
+#!/bin/bash
+str1="hello"
+str2="world"
+
+if [ "$str1" = "$str2" ]; then
+  echo "Strings are equal"
+else
+  echo "Strings are not equal"
+fi
+```
+
+
+
+#### 6.6 文件测试运算符
+
+用于测试文件的属性，如是否存在、是否可读等。
+
+- `-e`：文件存在
+- `-f`：是普通文件
+- `-d`：是目录
+- `-r`：文件可读
+- `-w`：文件可写
+- `-x`：文件可执行
+- `-s`：文件非空
+
+```bash
+#!/bin/bash
+file="test.txt"
+
+if [ -e $file ]; then
+  echo "$file exists"
+else
+  echo "$file does not exist"
+fi
+```
+
+
+
+### 7、条件测试
+
+在 Shell 中，`(())`、`[]` 和 `[[]]` 都是常见的表达式和测试语法。
+
+`(())` 基本上都是用于进行运算
+
+`[[]]` 基本上用于进行判断
+
+
+
+#### 7.1  `(())` — 算术运算
+
+`(())` 用于进行算术运算或比较。在这个表达式中，可以直接使用算术运算符（如 `+`、`-`、`*`、`/` 等）来进行数值运算。
+
+```bash
+#!/bin/bash
+
+# 进行算术运算
+a=5
+b=3
+((c = a + b))   # c = 5 + 3
+echo $c         # 输出：8
+
+((a++))          # a 自增 1
+echo $a          # 输出：6
+
+# 进行条件测试（不常用，条件测试一般用 [[]]
+if (( a > b && a != 0 )); then
+    echo "a 大于 b 且 a 不为 0"
+fi
+```
+
+
+
+#### 7.2  `[]` — 条件测试
+
+`[]` 用于在 Shell 中执行条件测试，检查文件、字符串或数字的状态。它属于传统的 Shell 测试表达式，支持各种操作符，如 `-d`、`-f`、`=`、`-lt` 等（`[]` 是不支持 &&、||、>、< 等运算符的，只能使用对应的 -a、-o、-gt、-lt）。
+
+```bash
+#!/bin/bash
+
+file="test.txt"
+
+# 检查文件是否存在
+if [ -f "$file" ]; then
+    echo "$file 存在"
+else
+    echo "$file 不存在"
+fi
+
+# 字符串比较
+str1="hello"
+str2="world"
+if [ "$str1" = "$str2" ]; then
+    echo "字符串相同"
+else
+    echo "字符串不同"
+fi
+```
+
+
+
+#### 7.3 `[[]]` — 扩展条件测试
+
+`[[]]` 是 bash 扩展的一部分，提供了更多的功能，比如更复杂的字符串比较、更宽松的语法、支持逻辑运算符（如 `&&` 和 `||`）。它比 `[]` 更强大且易于使用，尤其在进行字符串比较时。
+
+```bash
+#!/bin/bash
+
+str1="hello"
+str2="world"
+
+# 更灵活的字符串比较
+if [[ "$str1" == "hello" ]]; then
+    echo "str1 是 hello"
+fi
+
+# 字符串包含关系
+if [[ "$str1" == h* ]]; then
+    echo "str1 以 h 开头"
+fi
+```
+
+
+
+三者用法区别
+
+| 测试表达式       | test                  | []                    | [[]]]                                   | (())             |
+| ---------------- | --------------------- | --------------------- | --------------------------------------- | ---------------- |
+| 边界是否需要空格 | 需要                  | 需要                  | 需要                                    | 不需要           |
+| 逻辑操作符       | !、-a、-o             | !、-a、-o             | !、&&、\|\|                             | !、&&、\|\|      |
+| 整数比较操作符   | -eq、-gt、-lt. ge、le | -eq、-gt、-lt. ge、le | -eq、-gt、-lt. ge、le、=、＞、<、>=、<= | =、＞、<、>=、<= |
+| 字符串比较操作符 | =、==、 !=            | =、==、 !=            | =、==、 !=                              | =、==、 !=       |
+
+
+
+### 8、分支语句
+
+在Shell脚本中，分支语句用于根据不同的条件执行不同的代码块。主要有以下几种分支语句。
+
+
+
+#### 8.1 `if` 语句
+
+`if` 语句根据给定条件是否成立来执行某个代码块。
+
+语法
+
+```bash
+if [ 条件 ]; then
+    # 条件为真时执行的命令
+fi
+```
+
+案例
+
+```bash
+#!/bin/bash
+number=10
+
+if [ $number -gt 5 ]; then
+    echo "数字大于5"
+fi
+```
+
+
+
+#### 8.2 `if-else` 语句
+
+`if-else` 语句根据条件判断来决定执行的代码块。如果条件为真，则执行`if`块，否则执行`else`块。
+
+语法
+
+```bash
+if [ 条件 ]; then
+    # 条件为真时执行的命令
+else
+    # 条件为假时执行的命令
+fi
+```
+
+案例
+
+```bash
+#!/bin/bash
+number=3
+
+if [ $number -gt 5 ]; then
+    echo "数字大于5"
+else
+    echo "数字小于或等于5"
+fi
+```
+
+
+
+#### 8.3 `if-elif-else` 语句
+
+`if-elif-else` 语句用于多个条件判断，可以在不同条件下执行不同的代码块。
+
+语法
+
+```bash
+if [ 条件1 ]; then
+    # 条件1为真时执行的命令
+elif [ 条件2 ]; then
+    # 条件2为真时执行的命令
+elif [ 条件3 ]; then
+    # 条件3为真时执行的命令
+else
+    # 条件都不为真时执行的命令
+fi
+```
+
+案例
+
+```bash
+#!/bin/bash
+number=7
+
+if [ $number -gt 10 ]; then
+    echo "数字大于10"
+elif [ $number -eq 7 ]; then
+    echo "数字等于7"
+else
+    echo "数字小于10"
+fi
+```
+
+
+
+#### 8.4 `while` 语句
+
+`while` 语句用于在条件为真时重复执行某个代码块，直到条件为假为止。基本语法如下：
+
+语法
+
+```bash
+while 条件
+do
+  # 条件为真时执行的代码
+done
+```
+
+案例
+
+```bash
+#!/bin/bash
+count=1
+while [ $count -le 5 ]; do
+  echo "当前计数：$count"
+  ((count++))
+done
+```
+
+
+
+#### 8.5 `for` 语句
+
+`for` 语句用于在一定范围内遍历元素或执行一定次数的循环。基本语法有两种常见形式：
+
+语法
+
+```bash
+# 形式一：
+for 变量 in 元素列表
+do
+  # 循环体
+done
+
+# 形式二：
+for ((初始化; 条件; 更新))
+do
+  # 循环体
+done
+```
+
+案例
+
+```bash
+#!/bin/bash
+
+# 形式一案例：
+for i in 1 2 3 4 5
+do
+  echo "当前数字：$i"
+done
+
+# 形式二案例：
+for ((i=1; i<=5; i++))
+do
+  echo "数字：$i"
+done
+```
+
+
+
+#### 8.6 `case` 语句
+
+`case`语句用于多个条件的匹配，相当于多个`if-elif`语句的简化写法。它根据变量的值匹配不同的情况。
+
+语法
+
+```bash
+case 变量 in
+    模式1)
+        # 匹配模式1时执行的命令
+        ;;
+    模式2)
+        # 匹配模式2时执行的命令
+        ;;
+    *)
+        # 没有匹配任何模式时执行的命令
+        ;;
+esac
+```
+
+案例
+
+```bash
+#!/bin/bash
+fruit="apple"
+
+case $fruit in
+    "apple")
+        echo "这是苹果"
+        ;;
+    "banana")
+        echo "这是香蕉"
+        ;;
+    "orange")
+        echo "这是橙子"
+        ;;
+    *)
+        echo "未知的水果"
+        ;;
+esac
+```
+
