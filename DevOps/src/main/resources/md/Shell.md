@@ -774,6 +774,3 @@ calculate_sum() {
 result=$(calculate_sum 7 8)
 echo "The sum is: $result"
 ```
-
-
-
