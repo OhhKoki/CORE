@@ -203,6 +203,9 @@ docker run [OPTIONS] IMAGE [COMMAND] [ARG...]
 # （--volume 的缩写）：挂载数据卷。可以使用【docker volume】命令查看或者操作【卷映射】。
 -v
 
+#（--env 的缩写）：设置环境变量。
+-e
+
 # 指定容器名称。
 --name
 
@@ -227,6 +230,9 @@ docker run -v /app/data/nghtml:/usr/share/nginx/html nginx
 
 # 启动一个 nginx 容器，并将之前创建的卷 ngconfig 挂载到容器内的 /etc/nginx 目录。
 docker run -v ngconfig:/etc/nginx nginx
+
+# 设置容器环境变量 ENV=prod
+docker run -e "ENV=prod" nginx
 
 # 启动名为 my_nginx 的容器
 docker run --name my_nginx nginx
@@ -729,6 +735,10 @@ docker push registry.example.com/my_project/my_image:v1
 ### 4、目录挂载与卷映射
 
 在 Docker 中，目录挂载和卷映射都用于持久化容器数据。它们的作用是将容器内的数据与主机系统或外部存储进行绑定，从而确保数据即使在容器删除后也不会丢失。
+
+
+
+容器的核心目录一般有两个：【配置目录】与【数据目录】。【挂载】 & 【映射】 就是应用于这两个目录。
 
 
 
