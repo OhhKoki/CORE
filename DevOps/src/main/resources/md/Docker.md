@@ -1,8 +1,25 @@
 ### 1、什么是 Docker
 
+Docker 是一个开源平台，用于自动化应用程序的部署、扩展和管理。它通过容器技术将应用及其依赖打包成独立的、可移植的单元，确保在任何环境中都能一致运行。
+
 
 
 ### 2、Docker 架构
+
+Docker 的架构采用**客户端-服务器（C/S）模型**，核心组件协同工作以实现容器化环境的创建、管理和运行。以下是 Docker 架构的主要组成部分及其工作原理：
+
+ ![deepseek_mermaid_20250518_74d0b0](./assets/deepseek_mermaid_20250518_74d0b0.png)
+
+Docker 的架构主要由以下几个核心组件组成：
+
+1. **Docker Engine**：是 Docker 的核心，包括两个主要部分：
+    - **Docker Daemon (docker daemon)**：运行在后台，管理容器生命周期（创建、启动、停止等），以及与 Docker 容器、镜像、网络和数据卷进行交互。
+    - **Docker CLI (Command Line Interface)**：用户通过命令行与 Docker Daemon 交互，执行各种 Docker 操作（如构建、运行、停止容器等）。
+2. **Docker Images**：包含应用程序及其依赖的只读模板，用户可以基于这些镜像创建容器。镜像是 Docker 的基础，类似于虚拟机的镜像。
+3. **Docker Containers**：是由 Docker 镜像创建的运行时实例，容器是轻量级、可移植的、隔离的环境，运行应用程序及其所有依赖。
+4. **Docker Registry**：一个用于存储和分发 Docker 镜像的集中式仓库。默认的公共仓库是 Docker Hub，用户也可以搭建私有仓库。
+5. **Docker Network**：用于容器之间的网络通信，提供容器内外的网络连接。容器可以通过不同的网络模式（如桥接、宿主机等）与其他容器或外部网络进行交互。
+6. **Docker Volumes**：提供持久化数据存储的机制，可以在容器间共享数据或持久保存数据，即使容器停止或删除。
 
 
 
@@ -603,3 +620,11 @@ docker login -u myuser registry.example.com
 # 4. 推送镜像
 docker push registry.example.com/my_project/my_image:v1
 ```
+
+
+
+### 4、Docker Compose
+
+
+
+### 5、Dockerfile
