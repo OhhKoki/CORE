@@ -219,10 +219,10 @@ docker run -d nginx
 # 将主机 8080 端口映射到容器 80 端口
 docker run -p 8080:80 nginx
 
-# 将容器中的 /usr/share/nginx/html 目录挂载到主机的 /app/date/nghtml 目录。目录挂载一般是挂载【数据相关】的目录。
+# 启动一个 nginx 容器，并将主机上的 /app/date/nghtml目录挂载到容器内部的 /usr/share/nginx/html 目录
 docker run -v /app/data/nghtml:/usr/share/nginx/html nginx
 
-# 将容器中的 /etc/nginx 目录映射到主机的卷（一个名为 ngconfig 的卷）。卷映射一般都是映射【配置文件】相关的目录。
+# 启动一个 nginx 容器，并将之前创建的卷 ngconfig 挂载到容器内的 /etc/nginx 目录。
 docker run -v ngconfig:/etc/nginx nginx
 
 # 启动名为 my_nginx 的容器
@@ -370,7 +370,7 @@ docker logs --tail 50 my_nginx
 
 
 
-##### 3.2.6 日志：docker stats
+##### 3.2.6 资源：docker stats
 
 用于实时显示 Docker 容器的资源使用情况，如 CPU、内存、网络和磁盘 I/O 等指标。
 
@@ -430,6 +430,94 @@ docker exec -it my_nginx /bin/bash
 
 # 在运行中的 my_nginx 容器内执行 env 命令，并设置一个环境变量 DEBUG=true，用于显示容器内的环境变量信息，包括新设置的 DEBUG 变量。
 docker exec -e "DEBUG=true" my_nginx env /bin/bash
+```
+
+
+
+##### 3.2.7 详情：docker inspect
+
+用于查看一个或多个 Docker 容器的详细信息，包括配置、状态、网络设置等，支持通过 `--format` 选项提取特定信息。
+
+**语法：**
+
+```bash
+docker container inspect [OPTIONS] CONTAINER_NAME [CONTAINER_NAME...]
+```
+
+**参数**：
+
+```bash
+# （--format 的缩写）：按 Go 模板语法提取特定字段。
+-f
+
+# （--size 的缩写）：显示容器占用的总文件系统大小。
+-s
+```
+
+**案例**：
+
+```bash
+# 查看容器的 IP 地址
+docker container inspect -f '{{ .NetworkSettings.IPAddress }}' my_container
+
+# 查看所有运行中容器的 IP 地址
+docker container inspect -f '{{ .Name }} IP: {{ .NetworkSettings.IPAddress }}' $(docker ps -q)
+
+# 查看容器的启动命令
+docker container inspect -f '{{ .Config.Cmd }}' my_container
+
+# 查看容器挂载的卷信息（主机路径 -> 容器路径）
+docker container inspect -f '{{ range .Mounts }}{{ .Source }} -> {{ .Destination }}{{ "\n" }}{{ end }}' my_container
+
+# 查看容器状态（运行中/已退出）
+docker container inspect -f '{{ .State.Status }}' my_container
+
+# 检查多个容器的状态
+docker container inspect -f '{{ .Name }} 状态: {{ .State.Status }}' container1 container2
+```
+
+
+
+##### 3.2.7 映射：docker volume
+
+用于管理 Docker 容器的数据卷，提供持久化存储，使数据在容器重启或删除后仍能保留。
+
+**语法：**
+
+```bash
+docker volume COMMAND
+```
+
+**参数**：
+
+```bash
+# 创建 Volume
+create
+
+# 查看所有 Volume
+ls
+
+# 查看指定 Volume 详细信息（如存储路径）
+inspect
+
+# 删除 Volume
+rm
+```
+
+**案例**：
+
+```bash
+# 创建 Volume
+docker volume create my_volume
+
+# 查看所有 Volume
+docker volume ls
+
+# 查看 Volume 详细信息（如存储路径）
+docker volume inspect my_volume
+
+# 删除 Volume
+docker volume rm my_volume
 ```
 
 
@@ -633,6 +721,67 @@ docker push registry.example.com/my_project/my_image:v1
 
 
 ### 4、目录挂载与卷映射
+
+在 Docker 中，目录挂载和卷映射都用于持久化容器数据。它们的作用是将容器内的数据与主机系统或外部存储进行绑定，从而确保数据即使在容器删除后也不会丢失。
+
+
+
+#### 1. 目录挂载 (Bind Mount)
+
+目录挂载是将宿主机的某个目录挂载到容器中，使得容器内的数据和宿主机的数据相互共享，直接反映在宿主机文件系统中。
+
+**应用场景**：
+
+```bash
+需要将容器中的数据和宿主机的数据同步，比如日志文件、配置文件等。
+```
+
+**命令示例**：
+
+```bash
+# 将宿主机的指定目录挂载到指定容器的指定目录
+docker run -v /宿主机目录:/容器内目录 <镜像名>
+```
+
+**应用示例：**
+
+```bash
+# 启动一个 Nginx 容器，并将主机上的 /app/date/nghtml目录挂载到容器内部的 /usr/share/nginx/html 目录	
+docker run -v /app/data/nghtml:/usr/share/nginx/html nginx
+```
+
+
+
+#### 2. 卷映射 (Volume Mapping)
+
+卷映射是将一个 Docker 卷挂载到容器中。Docker 卷是由 Docker 管理的，不直接与宿主机的文件系统挂钩。适用于需要持久化数据且与宿主机隔离的场景。
+
+**应用场景**：
+
+```bash
+1、数据需要持久化存储，并且不依赖宿主机。
+2、需要在多个容器间共享数据。
+```
+
+**命令示例**：
+
+```bash
+# 创建 Docker 卷
+docker volume create <卷名>
+# 将指定的 Docker 卷映射到执行容器的指定目录
+docker run -v <卷名>:/容器内目录 <镜像名>
+```
+
+**应用示例：**
+
+```bash
+# 创建一个名为 ngconfig 的 Docker 卷（volume）。
+docker volume create ngconfig
+
+# 启动一个 nginx 容器，并将之前创建的卷 ngconfig 挂载到容器内的 /etc/nginx 目录。
+# 容器内的 /etc/nginx 目录会从卷 ngconfig 中获取数据，这样做的目的是将 Nginx 的配置文件持久化到卷中。
+docker run -v ngconfig:/etc/nginx nginx
+```
 
 
 
