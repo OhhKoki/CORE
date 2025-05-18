@@ -241,6 +241,25 @@ docker run --name my_nginx nginx
 docker run --name my_nginx --network mynetwork nginx
 ```
 
+**实践：**
+
+```bash
+# 最佳实践，启动一个容器，主要关注三个方面：
+
+docker run -d -p 3306:3306 -v /app/myconf:/etc/mysql/conf.d -v /app/mydate:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=123456 --name mysql mysql:lastest
+
+	1、网络：-p & --network
+		-- 是否要对外暴露端口（端口映射）。
+		-- 容器之间是否要进行通信（要通信的容器需要加入相同的自定义网络）。
+		
+  2、存储：-v
+  	-- 是否需要对【配置目录】进行【卷映射】。
+  	-- 是否需要对【数据目录】进行【目录挂载】。
+  	
+  3、环境变量：-e
+  	-- 启动容器时是否需要增加环境变量。
+```
+
 
 
 ##### 3.2.2 查看：docker ps
@@ -845,6 +864,82 @@ docker run --name my_nginx --network mynetwork nginx
 
 
 ### 6、Docker Compose
+
+Docker Compose 是 Docker 官方提供的工具，用于通过一个 YAML 文件定义和运行多容器应用。它简化了多容器编排的流程，允许用户通过单一命令管理整个应用的生命周期。
+
+**语法：**
+
+```bash
+docker compose [OPTIONS] COMMAND
+```
+
+**参数**：
+
+```bash
+# （--file 的缩写）：指定 compose.yaml 文件
+-f
+
+# 案例
+docker compose -f my_compose.yaml up -d
+
+# docker compose 是主命令。
+# up 是子命令，用来执行具体的操作（启动服务）。
+# -f 是一个参数，用来指定 Docker Compose 文件（默认情况下是 docker-compose.yml），通过这个参数，你可以指定一个不同的文件，比如 my_compose.yaml。
+```
+
+**命令**
+
+| 参数 | 用途                 | 案例                                   |
+| ---- | -------------------- | -------------------------------------- |
+| up   | 启动所有服务         | `docker compose up -d`（后台启动）     |
+| down | 停止并删除容器、网络 | `docker compose down -v`（同时删除卷） |
+
+**案例：**
+
+```bash
+# 下面是一个用于启动 WordPress 并依赖 MySQL 的 docker-compose.yml 文件示例：
+
+version: '3.7'
+
+services:
+  wordpress:
+    image: wordpress:latest
+    container_name: wordpress
+    ports:
+      - "8080:80"
+    environment:
+      WORDPRESS_DB_HOST: mysql:3306
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: exampleuser
+      WORDPRESS_DB_PASSWORD: examplepass
+    depends_on:
+      - mysql
+    networks:
+      - wordpress_network
+
+  mysql:
+    image: mysql:5.7
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: exampleuser
+      MYSQL_PASSWORD: examplepass
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - wordpress_network
+
+networks:
+  wordpress_network:
+  	# 默认驱动类型就是 local（即：可以不写
+    driver: bridge
+
+volumes:
+  mysql_data:
+  	# 默认驱动类型就是 local（即：可以不写
+    driver: local
+```
 
 
 
