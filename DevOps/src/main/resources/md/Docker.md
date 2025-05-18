@@ -414,3 +414,192 @@ docker exec -e "DEBUG=true" my_nginx env /bin/bash
 #### 3.3 分享相关
 
 Docker 分享相关的命令用于创建、保存、加载、标记、登录和推送镜像，以便在不同环境间共享和分发 Docker 镜像。
+
+
+
+##### 3.3.1 提交：docker commit
+
+用于将容器的当前状态保存为一个新的镜像。
+
+**语法：**
+
+```bash
+docker commit [OPTIONS] CONTAINER [REPOSITORY[:TAG]]
+```
+
+**参数**：
+
+```bash
+# （--message 的缩写）：添加提交信息（类似 Git commit）。
+-m
+
+# （--author 的缩写）：指定镜像作者。
+-a
+```
+
+**案例**：
+
+```bash
+# 将 my_container 的当前状态保存为一个名为 my_image 的新镜像，并指定容器的版本为 lastest.
+docker commit -m "安装 Apache 服务" my_container my_image:lastest
+
+# 使用 -m 参数添加提交信息
+docker commit -m "安装 Apache 服务" my_container my_image:v1
+
+# 使用 -a 参数标注作者
+docker commit -a "Dev Team <dev@example.com>" my_container my_image:v1
+```
+
+
+
+##### 3.3.2 保存：docker save
+
+用于将 Docker 镜像保存为一个 tar 文件，以便于镜像的备份或迁移。
+
+**语法：**
+
+```bash
+docker save [OPTIONS] IMAGE [IMAGE...]
+```
+
+**参数**：
+
+```bash
+# （--output 的缩写）：指定输出文件路径。
+-o
+```
+
+**案例**：
+
+```bash
+# 使用 -o 参数导出镜像（必须指定文件名：cowardly refusing to save to a terminal. Use the -o flag or redirect
+docker save -o nginx.tar nginx:latest
+```
+
+
+
+##### 3.3.3 加载：docker load
+
+用于从 tar 文件中加载 Docker 镜像。
+
+**语法：**
+
+```bash
+docker load [OPTIONS]
+```
+
+**参数**：
+
+```bash
+# （--input 的缩写）：指定输入文件路径。
+-i
+```
+
+**案例**：
+
+```bash
+# 使用 -i 参数加载镜像
+docker load -i nginx.tar
+```
+
+
+
+##### 3.3.4 登陆：docker login
+
+用于登录到 Docker 仓库（如 Docker Hub），以便进行镜像的推送或拉取操作。
+
+**语法：**
+
+```bash
+docker login [OPTIONS] [SERVER]
+```
+
+**参数**：
+
+```bash
+# （--username 的缩写）：指定用户名。
+-u
+
+# （--password 的缩写）：指定密码（明文不安全）。
+-p
+```
+
+**案例**：
+
+```bash
+# 使用 -u 参数指定用户名（推荐交互式输入密码）
+docker login -u myuser registry.example.com
+
+# 使用 -u 和 -p 明文登录（不推荐）
+docker login -u myuser -p mypassword registry.example.com
+```
+
+
+
+##### 3.3.5 命名：docker tag
+
+用于为 Docker 镜像创建一个新的标签，以便于更方便地标识和管理镜像版本。
+
+**语法：**
+
+```bash
+docker tag SOURCE_IMAGE[:TAG] TARGET_IMAGE[:TAG]
+```
+
+**参数**：
+
+```bash
+没有常用参数
+```
+
+**案例**：
+
+```bash
+# 为镜像添加仓库路径标签
+docker tag my_image:v1 registry.example.com/my_project/my_image:v1
+```
+
+
+
+##### 3.3.6 推送：docker push
+
+用于将本地 Docker 镜像上传到远程 Docker 仓库。
+
+**语法：**
+
+```bash
+docker push [OPTIONS] NAME[:TAG]
+```
+
+**参数**：
+
+```bash
+没有常用参数
+```
+
+**案例**：
+
+```bash
+# 推送镜像到仓库（需先通过 docker tag 重命名）
+docker push registry.example.com/my_project/my_image:v1
+```
+
+
+
+#####  3.3.7 示例
+
+将一个容器打包为镜像，然后推送到仓库的完整流程如下：
+
+```bash
+# 1. 提交容器为镜像（同时使用 -m 和 -a）
+docker commit -m "初始化配置" -a "Admin <admin@example.com>" my_container my_image:v1
+
+# 2. 添加仓库标签
+docker tag my_image:v1 registry.example.com/my_project/my_image:v1
+
+# 3. 登录仓库
+docker login -u myuser registry.example.com
+
+# 4. 推送镜像
+docker push registry.example.com/my_project/my_image:v1
+```
