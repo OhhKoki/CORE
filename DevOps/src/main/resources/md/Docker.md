@@ -944,3 +944,115 @@ volumes:
 
 
 ### 7、Dockerfile
+
+
+Dockerfile 是一个文本文件，包含了一系列的命令和参数，用来自动化构建 Docker 镜像的过程。它定义了从基础镜像开始，到安装依赖、设置环境变量、复制文件、暴露端口等一系列的步骤。通过 Dockerfile，可以方便地构建和管理应用的容器化环境。
+
+
+
+#### 7.1 常用参数
+
+
+
+**FROM**：用来指定基础镜像。
+
+```Dockerfile
+FROM ubuntu:20.04
+```
+
+
+
+**RUN**：用来在镜像构建过程中执行命令。常用来安装软件包。
+
+```Dockerfile
+RUN apt-get update && apt-get install -y python3
+```
+
+
+
+**COPY**：用来将文件从主机复制到容器内。
+
+```Dockerfile
+COPY ./app /usr/src/app
+```
+
+
+
+**ADD**：类似于 COPY，但支持解压压缩文件和从 URL 下载文件。
+
+```Dockerfile
+ADD https://example.com/app.tar.gz /usr/src/app
+```
+
+
+
+**WORKDIR**：设置当前工作目录。
+
+```Dockerfile
+WORKDIR /usr/src/app
+```
+
+
+
+**CMD**：设置容器启动时默认执行的命令。
+
+```Dockerfile
+CMD ["python3", "app.py"]
+```
+
+
+
+**ENTRYPOINT**：设置容器启动时默认的命令，可以与 CMD 配合使用。
+
+```Dockerfile
+ENTRYPOINT ["python3"]
+CMD ["app.py"]
+```
+
+
+
+**EXPOSE**：声明容器需要监听的端口。
+
+```Dockerfile
+EXPOSE 8080
+```
+
+
+
+**ENV**：设置环境变量。
+
+```Dockerfile
+ENV APP_ENV=production
+```
+
+
+
+**VOLUME**：创建一个挂载点，用于共享数据。
+
+```Dockerfile
+VOLUME /data
+```
+
+
+
+#### 7.2 使用案例
+
+在 Spring Boot 项目的根目录下，创建一个 `Dockerfile` 来构建 Spring Boot 应用的 Docker 镜像：
+
+```dockerfile
+# 使用官方的 OpenJDK 镜像作为基础镜像
+FROM openjdk:17-jdk-slim
+
+# 设置工作目录
+WORKDIR /app
+
+# 将本地的 JAR 文件复制到容器内
+COPY target/your-springboot-app.jar /app/app.jar
+
+# 暴露应用程序使用的端口 (通常 Spring Boot 默认为 8080)
+EXPOSE 8080
+
+# 运行 Spring Boot 应用
+ENTRYPOINT ["java", "-jar", "app.jar"]
+```
+
