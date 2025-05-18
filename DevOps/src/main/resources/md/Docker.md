@@ -200,7 +200,7 @@ docker run [OPTIONS] IMAGE [COMMAND] [ARG...]
 # （--publish 的缩写）：端口映射。
 -p
 
-# （--volume 的缩写）：挂载数据卷。
+# （--volume 的缩写）：挂载数据卷。可以使用【docker volume】命令查看或者操作【卷映射】
 -v
 
 # 指定容器名称。
@@ -219,8 +219,11 @@ docker run -d nginx
 # 将主机 8080 端口映射到容器 80 端口
 docker run -p 8080:80 nginx
 
-# 挂载主机目录到容器
-docker run -v /host/data:/container/data nginx
+# 将容器中的 /usr/share/nginx/html 目录挂载到主机的 /app/date/nghtml 目录。目录挂载一般是挂载【数据相关】的目录。
+docker run -v /app/data/nghtml:/usr/share/nginx/html nginx
+
+# 将容器中的 /etc/nginx 目录映射到主机的卷（一个名为 ngconfig 的卷）。卷映射一般都是映射【配置文件】相关的目录。
+docker run -v ngconfig:/etc/nginx nginx
 
 # 启动名为 my_nginx 的容器
 docker run --name my_nginx nginx
@@ -390,6 +393,9 @@ docker stats [OPTIONS] [CONTAINER...]
 # 实时显示 Docker 容器的资源使用情况
 docker stats
 
+# 实时显示 my_nginx 的资源使用情况
+docker stats my_nginx
+
 # 监控所有容器的资源使用（包括已停止的）
 docker stats -a
 ```
@@ -544,6 +550,9 @@ docker login [OPTIONS] [SERVER]
 **案例**：
 
 ```bash
+# 登录到 Docker 仓库（如 Docker Hub）
+docker login registry.example.com
+
 # 使用 -u 参数指定用户名（推荐交互式输入密码）
 docker login -u myuser registry.example.com
 
@@ -623,8 +632,16 @@ docker push registry.example.com/my_project/my_image:v1
 
 
 
-### 4、Docker Compose
+### 4、目录挂载与卷映射
 
 
 
-### 5、Dockerfile
+### 5、自定义网络
+
+
+
+### 6、Docker Compose
+
+
+
+### 7、Dockerfile
