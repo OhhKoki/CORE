@@ -200,11 +200,14 @@ docker run [OPTIONS] IMAGE [COMMAND] [ARG...]
 # （--publish 的缩写）：端口映射。
 -p
 
-# （--volume 的缩写）：挂载数据卷。可以使用【docker volume】命令查看或者操作【卷映射】
+# （--volume 的缩写）：挂载数据卷。可以使用【docker volume】命令查看或者操作【卷映射】。
 -v
 
 # 指定容器名称。
 --name
+
+# 让容器加入指定的网络。加入了相同的自定义网络的容器，这些容器之间可以通过域名（容器名:端口）进行通信。
+--network
 ```
 
 **案例**：
@@ -227,6 +230,9 @@ docker run -v ngconfig:/etc/nginx nginx
 
 # 启动名为 my_nginx 的容器
 docker run --name my_nginx nginx
+
+# 启动名为 my_nginx 的容器，并让其加入 mynet 网络
+docker run --name my_nginx --network mynetwork nginx
 ```
 
 
@@ -756,6 +762,8 @@ docker run -v /app/data/nghtml:/usr/share/nginx/html nginx
 
 卷映射是将一个 Docker 卷挂载到容器中。Docker 卷是由 Docker 管理的，不直接与宿主机的文件系统挂钩。适用于需要持久化数据且与宿主机隔离的场景。
 
+使用 `docker volume` 命令进行卷的增删改查等操作
+
 **应用场景**：
 
 ```bash
@@ -786,6 +794,43 @@ docker run -v ngconfig:/etc/nginx nginx
 
 
 ### 5、自定义网络
+
+Docker 默认的网络 `docker0` 是一个桥接网络，它会在 Docker 守护进程启动时自动创建。所有未指定网络的容器都会连接到 `docker0` 网络。这个网络允许容器之间通信，同时与主机通信，但每个容器都在独立的 IP 地址空间内。
+
+与之不同的是，自定义网络允许用户定义自己的网络配置，以便更灵活地控制容器之间的通信。加入了相同的自定义网络的容器，这些容器之间可以通过域名（容器名:端口）进行通信。
+
+
+
+docker network 是 与 docker 网络相关的命令
+
+```bash
+# 列出所有网络
+docker network ls
+
+# 创建自定义网络
+docker network create <名称>
+
+# 查看网络详细信息
+docker network inspect <名称>
+
+# 将已有容器连接到指定网络
+docker network connect <网络> <容器>
+
+# 断开容器与网络的连接
+docker network disconnect <网络> <容器>
+```
+
+
+
+以下是一个自定义网络的使用案例
+
+```bash
+# 创建自定义网络 mynet
+docker network create mynet
+
+# 启动名为 my_nginx 的容器，并让其加入 mynet 网络
+docker run --name my_nginx --network mynetwork nginx
+```
 
 
 
