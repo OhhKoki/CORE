@@ -1,4 +1,4 @@
-java 核心
+java 核心（一周）
     juc
     集合
         过一遍源码，然后背题
@@ -8,17 +8,27 @@ java 核心
         ConcurrentHashMap
     jvm
         快速过一遍，然后背题
-中间件
+
+中间件（一周）
     快速过一遍，然后背题
     redis
     kafka
     mysql
-springBoot
-    过一遍源码，然后背题
-    三级缓存
-    自动装配
-mybatis
-    快速过一遍，然后背题
+        准备：索引结构、sql优化
+
+框架（一周）
+    springBoot
+        过一遍源码，然后背题
+        三级缓存
+        自动装配
+    mybatis
+        快速过一遍，然后背题
+
+项目（一周）
+    包装项目
+    项目遇到的问题，怎么解决
+    准备场景题
+
 DevOps
     快速过一遍常用命令即可
     Linux
