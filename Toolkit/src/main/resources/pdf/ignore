@@ -1,18 +1,25 @@
-juc
-集合
-    ArrayList
-    HashSet
-    HashMap
-    ConcurrentHashMap
+java 核心
+    juc
+    集合
+        过一遍源码，然后背题
+        ArrayList
+        HashSet
+        HashMap
+        ConcurrentHashMap
+    jvm
+        快速过一遍，然后背题
 中间件
     快速过一遍，然后背题
     redis
     kafka
     mysql
 springBoot
+    过一遍源码，然后背题
     三级缓存
     自动装配
 mybatis
     快速过一遍，然后背题
-jvm
-    快速过一遍，然后背题
+DevOps
+    快速过一遍常用命令即可
+    Linux
+    Docker
