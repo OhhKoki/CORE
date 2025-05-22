@@ -1418,7 +1418,28 @@ wait() 和 sleep() 都用于暂停线程的执行，但它们有几个主要区�
 
 
 
-#### 3.1.5.5 避免虚假唤醒
+#### 3.1.5.5 park() 和 unpark()
+
+park & unpark 和 wait & notify 的区别？
+
+- wait，notify 和 notifyAll 必须配合 Object Monitor 一起使用，而 park，unpark 不必。
+
+- park & unpark 是以线程为单位来【阻塞】和【唤醒】线程，而 notify 只能随机唤醒一个等待线程，notifyAll 
+
+    是唤醒所有等待线程，就不那么【精确】
+
+- park & unpark 可以先 unpark，而 wait & notify 不能先 notify
+
+    
+
+**总结**：
+
+- park & unpark 更灵活且底层，不依赖于对象锁。
+- wait & notify 依赖于对象锁，适用于条件同步，通常用于基于锁的线程间协作。
+
+
+
+#### 3.1.5.6 避免虚假唤醒
 
 为了避免虚假唤醒，我们通常需要将 `wait()` 调用放在循环中，并检查线程是否满足继续执行的条件。这样，即使 `notifyAll()` 被调用后线程被唤醒，它也会检查条件是否满足，而不是直接执行，从而避免虚假唤醒的情况。
 
@@ -1515,10 +1536,142 @@ public class ProducerConsumerExample {
         consumer2.start();
     }
 }
-
 ```
 
 
+
+#### 3.1.5.7 异步生产者与消费者
+
+定义一个消息队列，用于生产与消费消息
+
+- 消费队列可以用来平衡生产和消费的线程资源
+
+- 生产者仅负责产生结果数据，不关心数据该如何处理，而消费者专心处理结果数据
+
+- 消息队列是有容量限制的，满时不会再加入数据，空时不会再消耗数据
+
+- JDK 中各种阻塞队列，采用的就是这种模式
+
+
+
+模型如下：
+
+<img src="./assets/picture22-7903802.png" alt="picture22" style="zoom:50%;" />
+
+
+
+代码如下：
+
+```java
+@Slf4j(topic = "c.Test09")
+public class Test09 {
+    public static void main(String[] args) {
+        MessageQueue messageQueue = new MessageQueue(2);
+        // 4 个生产者线程, 下载任务
+        for(int i = 0; i < 4; i++) {
+            int id = i;
+            new Thread(() -> {
+                messageQueue.put(new Message(id, "值" + id));
+            }, "生产者" + i).start();
+        }
+
+        // 1 个消费者线程, 处理结果
+        new Thread(() -> {
+            while (true) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                Message message = messageQueue.take();
+                log.debug("消费消息：{}，{}", message.getId(), message.getMessage());
+            }
+        }, "消费者").start();
+    }
+}
+
+
+@Slf4j(topic = "c.Message")
+class Message {
+    private int id;
+    private Object message;
+
+    public Message(int id, Object message) {
+        this.id = id;
+        this.message = message;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public Object getMessage() {
+        return message;
+    }
+}
+
+@Slf4j(topic = "c.MessageQueue")
+class MessageQueue {
+    private LinkedList<Message> queue;
+    private int capacity;
+
+    public MessageQueue(int capacity) {
+        this.capacity = capacity;
+        queue = new LinkedList<>();
+    }
+
+    public Message take() {
+        synchronized (queue) {
+            while (queue.isEmpty()) {
+                log.debug("没货了, wait");
+                try {
+                    queue.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            Message message = queue.removeFirst();
+            queue.notifyAll();
+            return message;
+        }
+    }
+
+    public void put(Message message) {
+        synchronized (queue) {
+            while (queue.size() == capacity) {
+                log.debug("库存已达上限, wait");
+                try {
+                    queue.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            log.debug("存入消息：{}", message.getMessage());
+            queue.addLast(message);
+            queue.notifyAll();
+        }
+    }
+}
+```
+
+
+
+输出如下
+
+```java
+17:13:25 [生产者0] - 存入消息：值0
+17:13:25 [生产者3] - 存入消息：值3
+17:13:25 [生产者2] - 库存已达上限, wait
+17:13:25 [生产者1] - 库存已达上限, wait
+17:13:26 [消费者] - 消费消息：0，值0
+17:13:26 [生产者2] - 存入消息：值2
+17:13:26 [生产者1] - 库存已达上限, wait
+17:13:27 [消费者] - 消费消息：3，值3
+17:13:27 [生产者1] - 存入消息：值1
+17:13:28 [消费者] - 消费消息：2，值2
+17:13:29 [消费者] - 消费消息：1，值1
+17:13:30 [消费者] - 没货了, wait
+```
 
 
 
