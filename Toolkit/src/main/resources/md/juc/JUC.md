@@ -26,11 +26,11 @@ Java 针对这些问题的解决方案是什么？
 
 单核时代，不同线程操作同一个 CPU 里面的缓存，不存在可见性问题。
 
-<img src="../assets/单核CUP缓存与内存的关系.png" alt="单核CUP缓存与内存的关系" width="400" />
+<img src="./assets/picture1.png" alt="image" style="zoom:50%;" />
 
 多核时代，每颗 CPU 都有自己的缓存，不同的线程操作不同 CPU 的缓存时，对彼此之间就不具备可见性了。
 
-<img src="../assets/多核CUP缓存与内存的关系.png" alt="多核CUP缓存与内存的关系"  width="400"  />
+<img src="./assets/picture2.png" alt="多核CUP缓存与内存的关系" style="zoom:50%;" />
 
 
 
@@ -42,7 +42,7 @@ Java 针对这些问题的解决方案是什么？
 
 线程只有被分配了 CPU 时间片后才能执行，线程切换的时机大多数是在时间片结束的时候。
 
-<img src="../assets/线程切换.png" alt="线程切换" width="400"/>
+<img src="./assets/picture3.png" alt="线程切换" style="zoom:50%;" />
 
 我们现在使用的高级程序语言一条语句往往对应多条 CPU 指令，例如语句：count += 1，至少需要三条 CPU 指令。
 
@@ -54,7 +54,7 @@ Java 针对这些问题的解决方案是什么？
 
 操作系统做任务切换，可以发生在任何一条 CPU 指令执行完。这就可能得到意想不到的结果。
 
-<img src="../assets/非原子操作的执行路径关系.png" alt="非原子操作的执行路径关系" width="400" />
+<img src="./assets/picture4.png" alt="非原子操作的执行路径关系" style="zoom: 25%;" />
 
 我们把一个或者多个操作在 CPU 执行的过程中不被中断的特性成为**原子性**。CPU 能够保证原子操作是 CPU 指令级别的，但不是高级语言的操作符，因此很多时候我们需要在高级语言层面保证操作的原子性。
 
@@ -95,7 +95,7 @@ instance = new Singleton() 语句经过编译优化重排序后的CPU执行过�
 
 当 `线程A` 执行完 `指令2` 时，发生 `线程切换`，`线程B` 调用 `getInstance()` 方法，获得未初始化的 `Singleton` 对象，如果此时访问对象成员变量，那么就可能触发空指针异常。
 
-<img src="../assets/双重检查创建单例对象异常执行路径.png" alt="双重检查创建单例对象异常执行路径" width="600" />
+<img src="./assets/picture5.png" alt="双重检查创建单例对象异常执行路径" width="600" />
 
 
 
@@ -135,7 +135,7 @@ instance = new Singleton() 语句经过编译优化重排序后的CPU执行过�
 
 线程各个状态转换的示意图如下
 
-![image](../assets/ace830df-9919-48ca-91b5-60b193f593d2-20240922163451684.png)
+![image](./assets/picture6.png)
 
 ### 2.1.1 新建(New)
 
@@ -611,19 +611,19 @@ public class Test05 {
 
 线程先从主存将变量复制到工作内存
 
-![截屏2025-05-22 07.59.23](../assets/截屏2025-05-22%2007.59.23.png)
+![image](./assets/picture7.png)
 
 在单线程环境下运行时，以上 8 行代码是没有问题的
 
-![截屏2025-05-22 08.14.12](../assets/截屏2025-05-22%2008.14.12.png)
+![image](./assets/picture8.png)
 
 但是在多线程环境下，这 8 行代码可能会交错执行（上下文切换导致），出现正负数情况
 
-![截屏2024-04-11 12.44.05](../assets/截屏2024-04-11%2012.44.05.png)
+![image](./assets/picture9.png)
 
 出现正数的情况
 
-![截屏2024-04-11 12.46.12](../assets/截屏2024-04-11%2012.46.12.png)
+![image](./assets/picture10.png)
 
 多线程操作共享变量出现数据错乱的原因：在多个线程对共享资源读写操作时发生指令交错（上下文切换导致指令错乱），就会出现问题
 
@@ -794,7 +794,7 @@ public static void main(String[] args) throws InterruptedException {
 
 代码的执行的时序图如下：
 
-![截屏2025-05-22 08.34.02](../assets/截屏2025-05-22%2008.34.02.png)
+![image](./assets/picture11.png)
 
 
 
@@ -889,7 +889,7 @@ if (table.get("key") == null) {
 
 时序图如下：
 
-![截屏2025-05-22 09.06.27](../assets/截屏2025-05-22%2009.06.27.png)
+![image](./assets/picture12.png)
 
 
 
@@ -911,7 +911,7 @@ Java 的 monitor 是一种同步机制，用于控制多个线程对共享资源
 
 所以当对象在实例化完成之后，是被存放在堆内存中的，这里的对象由3部分组成，如下图所示：
 
-![67f10b7784d17d2cf5d9a14584f9d381_1440w](../assets/67f10b7784d17d2cf5d9a14584f9d381_1440w.jpg)
+![image](./assets/picture13.png)
 
 对各个组成部分的功能简要进行说明
 
@@ -1020,7 +1020,7 @@ ObjectMonitor() {
 
 ObjectMonitor 中有两个队列，WaitSet 和 EntryList，用来保存 ObjectWaiter 对象列表（ 每个等待锁的线程都会被封装成 ObjectWaiter 对象 ），Owner 指向持有 ObjectMonitor 对象的线程，用于表示该对象锁已经被线程持有。图列：
 
-![截屏2024-05-08 22.10.55](../assets/截屏2024-05-08%2022.10.55.png)
+![image](./assets/picture14.png)
 
 
 
