@@ -2,7 +2,7 @@
 
 VI 是一个基于命令行的编辑器，它有三种核心模式，分别是命令模式（Command mode），输入模式（Insert mode）和尾行命令模式（Last line mode）。模式直接的切换如图所示：
 
-![img](./assets/v2-5715200d495279d4db514a7842c9028a_r.jpg)
+![img](./assets/picture1.png)
 
 
 
