@@ -1075,7 +1075,7 @@ ObjectMonitor 中有两个队列，WaitSet 和 EntryList，用来保存 ObjectWa
 
 #### 3.1.4.3 synchronized 进阶
 
-synchronized 的实现方式涉及偏向锁、轻量级锁和重量级锁。这些锁的设计目的是提升性能，减少线程争用时的开销。
+synchronized 的实现方式涉及偏向锁、轻量级锁和重量级锁。这些锁的设计目的是提升性能，减少线程争用时的开销。需要注意的是，然后锁分为了偏向锁、轻量级锁和重量级锁，但在使用的时候，都是用的 synchronized 关键字，锁的膨胀对开发者来说是透明的。
 
 
 
@@ -1118,15 +1118,181 @@ public static void main(String[] args) {
 
 ##### 3.1.4.3.1 偏向锁
 
-很多时候，同步代码其实只有一个线程在执行，并不存在竞争锁的情况。这时候直接加锁就会导致性能问题。偏向锁是为了优化只有一个线程访问同步代码块的情况。线程第一次访问时会获得偏向锁，并且在后续的访问中，不需要竞争锁。如果没有其他线程竞争，它就不会发生升级为轻量级锁或重量级锁的操作。
+很多时候，同步代码其实只有一个线程在执行，并不存在竞争锁的情况。这时候直接加锁就会导致性能问题。偏向锁是 Java 的一种锁优化方式，适用于没有线程竞争的情况。当一个线程获得锁之后，它会偏向于该线程，这意味着后续的锁请求会直接授予该线程，而不需要获取锁。只有当其他线程尝试获取锁时，偏向锁才会被撤销。
 
 
 
+简单来说就是：只有第一次使用 CAS 将线程 ID 设置到对象的 Mark Word 头，之后发现这个线程 ID 是自己的就表示没有竞争，不用重新 CAS。以后只要不发生竞争，这个对象就归该线程所有
 
 
 
+例如一下代码的执行时，然后锁被使用了三次，但是都是同一个线程使用，不存在其他线程，使用的就是偏向锁
+
+```java
+static final Object obj = new Object();
+
+public static void m1() {
+    synchronized (obj) {
+        // 同步块 A
+        m2();
+    }
+}
+
+public static void m2() {
+    synchronized (obj) {
+        // 同步块 B
+        m3();
+    }
+}
+
+public static void m3() {
+    synchronized (obj) {
+        // 同步块 C
+    }
+}
+
+public static void main(String[] args) {
+    Thread thread = new Thread(() -> {Test.m1();});
+}
+```
 
 
+
+执行流程如下
+
+![image](./assets/picture15.png)
+
+
+
+对于偏向锁，需要注意的是：
+
+- 如果开启了偏向锁（默认开启），那么对象创建后，markword 最后 3 位为 101，这时它的 threadId、epoch、age 都为 0。
+
+- 如果没有开启偏向锁，那么对象创建后，markword 最后 3 位为 001，这时它的 hashcode、age 都为 0，第一次用到 hashcode() 时才会赋值（hashcode）。
+- 偏向锁是默认是延迟的，不会在程序启动时立即生效，如果想避免延迟，可以加 VM 参数 -XX:BiasedLockingStartupDelay=0 来禁用延迟
+
+
+
+导致偏向锁撤销的场景：
+
+- 调用对象的 hashcode() 时，会导致偏向锁被撤销。原因：要存储 hashcode，但是 mark word 空间不够，只能占用 threadId 的位置，从而导致偏向锁被撤销。
+- 发生锁膨胀，也会导致偏向锁被撤销。
+
+
+
+##### 3.1.4.3.2 轻量级锁
+
+轻量级锁是为了减少锁竞争的开销。它在无竞争的情况下采用自旋的方式来获取锁，即线程尝试获取锁时，如果锁未被占用，线程会短时间内不断尝试获得锁。如果锁被占用，线程会放弃自旋，升级为重量级锁。
+
+
+
+简单来说：如果一个对象虽然有多线程要加锁，但加锁的时间是错开的（也就是没有竞争），那么可以使用轻量级锁来优化。
+
+
+
+假设有两个方法同步块，然后有两个线程0和1会进行访问，但是它们一个是上午访问，一个是下午访问，时间是错开的。即：虽然有多个线程都会访问同一个锁，但是访问时间不存在交叉，没有发生锁竞争。那么就会使用轻量级锁。
+
+```java
+static final Object obj = new Object();
+
+public static void method1() {
+    synchronized (obj) {
+        // 同步块 A
+        method2();
+    }
+}
+
+public static void method2() {
+    synchronized (obj) {
+        // 同步块 B
+    }
+}
+```
+
+
+
+当一个线程启动时，JVM 会为该线程在【虚拟机栈】中分配一块【栈内存】，这块【栈内存】时是线程私有的。每当线程访问方法时，都会在其【栈内存】中创建一个【栈贞】。【栈贞】遵循【先进后去】的原则。
+
+栈帧的主要构成如下：
+
+1. 局部变量表：用于存储方法的输入参数和局部变量。每个局部变量占用一定的空间，按照顺序存储。
+
+2. 锁记录：包含【锁记录的地址引|00】以及【锁对象的引用】，应用与轻量级锁（让线程与锁对象相互找到对方，同时保存锁对情的对象头信息）。
+
+3. 操作数栈：用于存储中间计算结果，是方法执行过程中用于操作的栈，类似于一个临时数据区。
+
+4. 方法返回地址：指向方法调用完成后的返回地址。
+
+5. 动态链接：指向方法的引用，存储当前方法调用的常量池引用。
+
+    
+
+以下为上述代码的图解，首先【Thread-0】准备访问【method1()】
+
+<img src="./assets/picture16.png" alt="picture16" style="zoom:50%;" />
+
+然后进行【锁记录】的 CAS 交换
+
+- 首先找到【Thread-0】的【method1栈贞】。
+- 然后找到【method1栈贞】的【锁记录】。
+- 然后在找到【锁记录】中的【Object reference】，将其引用指向【锁对象】。
+- 尝试用 CAS 替换 Object 的 Mark Word，将 Mark Word 的值存 入锁记录
+
+<img src="./assets/picture17.png" alt="image" style="zoom:50%;" />
+
+如果 CAS 替换成功，对象头中存储了 锁记录地址和状态 00 ，表示由该线程给对象加锁，这时图示如下
+
+<img src="./assets/picture18.png" alt="picture18" style="zoom:50%;" />
+
+如果 CAS 失败，则有两种情况
+
+- 情况一：如果是其它线程已经持有了该 Object 的轻量级锁，这时表明有竞争，进入锁膨胀过程，升级为重量级锁。
+- 情况二：如果是自己执行了 synchronized 锁重入，那么再添加一条 Lock Record 作为重入的计数。
+
+<img src="./assets/picture19.png" alt="picture19" style="zoom:50%;" />
+
+
+
+##### 3.1.4.3.3 重量级锁
+
+当多个线程频繁竞争同一锁时，轻量级锁会升级为重量级锁。重量级锁会使线程阻塞，操作系统需要将线程从用户态切换到内核态，开销较大。
+
+
+
+比如上面的【轻量级锁】进行 CAS 时，出现失败的【情况一】场景。即：在尝试加轻量级锁的过程中，CAS 操作无法成功，这时一种情况就是有其它线程为此对象加上了轻量级锁（有竞争），这时需要进行锁膨胀，将轻量级锁变为重量级锁。
+
+```java
+static Object obj = new Object();
+
+public static void method1() {
+    synchronized (obj) {	// 【Thread-0】和【Thread-1】同时访问，产生了【锁竞争】
+        // 同步块
+    }
+}
+```
+
+
+
+当 Thread-1 进行轻量级加锁时，Thread-0 已经对该对象加了轻量级锁
+
+<img src="./assets/picture20.png" alt="picture20" style="zoom:50%;" />
+
+
+
+这时 Thread-1 加轻量级锁失败，进入锁膨胀流程
+
+- 立即为 Object 对象申请 Monitor 锁，让 Object 指向重量级锁地址。
+- 然后自己进入 Monitor 的 EntryList 中进行等待，并进入 BLOCKED 状态。
+
+<img src="./assets/picture21.png" alt="picture21" style="zoom:50%;" />
+
+
+
+当【Thread-0】退出同步块解锁时，想使用 CAS 将 Mark Word 的值恢复给对象头，失败（锁对象的 Mark Word 标记为已经不是00，而是10，不能再按轻量级锁的流程解锁了）。这时会进入重量级解锁流程，即按照 Monitor 地址找到 Monitor 对象，设置 Owner 为 null，唤醒 EntryList 中 BLOCKED 线程。
+
+
+
+需要注意的是，当唤醒 EntryList 中 BLOCKED 线程后，EntryList 中的线程的状态从 BLOCKED 变为 Runnable，然后一起等待 CPU 分配时间片，谁获取到时间片，谁则获取到锁并执行同步区的代码。
 
 
 
