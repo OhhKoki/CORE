@@ -1160,7 +1160,7 @@ public static void main(String[] args) {
 
 执行流程如下
 
-![image](./assets/picture15.png)
+<img src="./assets/picture15.png" alt="image" style="zoom:50%;" />
 
 
 
