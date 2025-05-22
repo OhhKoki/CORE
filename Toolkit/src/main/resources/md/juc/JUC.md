@@ -95,7 +95,7 @@ instance = new Singleton() 语句经过编译优化重排序后的CPU执行过�
 
 当 `线程A` 执行完 `指令2` 时，发生 `线程切换`，`线程B` 调用 `getInstance()` 方法，获得未初始化的 `Singleton` 对象，如果此时访问对象成员变量，那么就可能触发空指针异常。
 
-<img src="./assets/picture5.png" alt="双重检查创建单例对象异常执行路径" width="600" />
+<img src="./assets/picture5.png" alt="双重检查创建单例对象异常执行路径" width="600"  />
 
 
 
@@ -611,19 +611,19 @@ public class Test05 {
 
 线程先从主存将变量复制到工作内存
 
-![image](./assets/picture7.png)
+<img src="./assets/picture7.png" alt="image" style="zoom:50%;" />
 
 在单线程环境下运行时，以上 8 行代码是没有问题的
 
-![image](./assets/picture8.png)
+<img src="./assets/picture8.png" alt="image" style="zoom:50%;" />
 
 但是在多线程环境下，这 8 行代码可能会交错执行（上下文切换导致），出现正负数情况
 
-![image](./assets/picture9.png)
+<img src="./assets/picture9.png" alt="image" style="zoom:50%;" />
 
 出现正数的情况
 
-![image](./assets/picture10.png)
+<img src="./assets/picture10.png" alt="image" style="zoom:50%;" />
 
 多线程操作共享变量出现数据错乱的原因：在多个线程对共享资源读写操作时发生指令交错（上下文切换导致指令错乱），就会出现问题
 
@@ -794,7 +794,7 @@ public static void main(String[] args) throws InterruptedException {
 
 代码的执行的时序图如下：
 
-![image](./assets/picture11.png)
+<img src="./assets/picture11.png" alt="image" style="zoom:50%;" />
 
 
 
@@ -889,7 +889,7 @@ if (table.get("key") == null) {
 
 时序图如下：
 
-![image](./assets/picture12.png)
+<img src="./assets/picture12.png" alt="image" style="zoom: 25%;" />
 
 
 
@@ -1020,7 +1020,7 @@ ObjectMonitor() {
 
 ObjectMonitor 中有两个队列，WaitSet 和 EntryList，用来保存 ObjectWaiter 对象列表（ 每个等待锁的线程都会被封装成 ObjectWaiter 对象 ），Owner 指向持有 ObjectMonitor 对象的线程，用于表示该对象锁已经被线程持有。图列：
 
-![image](./assets/picture14.png)
+<img src="./assets/picture14.png" alt="image" style="zoom:50%;" />
 
 
 
