@@ -1249,7 +1249,7 @@ public static void method2() {
 - 情况一：如果是其它线程已经持有了该 Object 的轻量级锁，这时表明有竞争，进入锁膨胀过程，升级为重量级锁。
 - 情况二：如果是自己执行了 synchronized 锁重入，那么再添加一条 Lock Record 作为重入的计数。
 
-<img src="./assets/picture19.png" alt="picture19" style="zoom:50%;" />
+<img src="./assets/picture19.png" alt="picture19" style="zoom: 50%;" />
 
 
 
@@ -1275,7 +1275,7 @@ public static void method1() {
 
 当 Thread-1 进行轻量级加锁时，Thread-0 已经对该对象加了轻量级锁
 
-<img src="./assets/picture20.png" alt="picture20" style="zoom:50%;" />
+<img src="./assets/picture20.png" alt="picture20" style="zoom: 50%;" />
 
 
 
@@ -1284,7 +1284,7 @@ public static void method1() {
 - 立即为 Object 对象申请 Monitor 锁，让 Object 指向重量级锁地址。
 - 然后自己进入 Monitor 的 EntryList 中进行等待，并进入 BLOCKED 状态。
 
-<img src="./assets/picture21.png" alt="picture21" style="zoom:50%;" />
+<img src="./assets/picture21.png" alt="picture21" style="zoom: 50%;" />
 
 
 
@@ -1345,6 +1345,180 @@ public class MyBenchmark {
 
 
 ### 3.1.5 wait/nofity
+
+在 Java 中，`wait()` 和 `notify()` 是用于线程间通信的基本方法，它们属于 `Object` 类，因此可以在任何对象上调用。
+
+
+
+#### 3.1.5.1 wait()
+
+- 作用：
+
+    - 让当前线程进入等待状态，直到它被其他线程通过 `notify()` 或 `notifyAll()` 唤醒。
+
+- 特点
+
+    - 需要在同步块中调用（即必须持有锁）。
+
+    - 线程进入等待状态后会释放锁，允许其他线程获取该锁。
+
+    - `wait()` 方法有三种重载形式，可以指定等待时间（单位：毫秒和纳秒），如果在指定时间内没有被唤醒，线程会自动唤醒。
+
+        
+
+#### 3.1.5.2 notify()
+
+- 作用：
+
+    - 唤醒在当前对象监视器上等待的单个线程。该线程会在下次获取锁时继续执行。
+
+- 特点
+
+    - 必须在同步块中调用（即必须持有锁）。
+
+    - 唤醒的线程并不一定立即执行，它需要等待当前线程释放锁。
+
+    - 通常用于生产者-消费者模型中的信号传递。
+
+        
+
+#### 3.1.5.3 notifyAll()
+
+- 作用：
+    - 唤醒在当前对象监视器上等待的所有线程。
+- 特点
+    - 同样必须在同步块中调用。
+    - 会唤醒所有等待的线程，允许它们重新竞争锁资源。
+
+
+
+#### 3.1.5.4 wait() 和 sleep()
+
+wait() 和 sleep() 都用于暂停线程的执行，但它们有几个主要区别：
+
+- 所属类：
+
+    - wait() 是 Object 类的方法，必须在同步块或同步方法中调用，并且它会释放当前对象的锁。
+    - sleep() 是 Thread 类的方法，不需要在同步块中调用，也不会释放锁。
+
+- 使用场景：
+
+    - wait() 用于线程间的通信，通常在多线程环境下，某个线程等待某个条件满足时调用。它会使当前线程放弃锁，并使线程进入等待状态，直到被唤醒。
+    - sleep() 用于使当前线程休眠一段时间，进入阻塞状态，指定的时间后自动恢复运行。它不涉及线程间的通信。
+
+- 唤醒方式：
+
+    - wait() 需要通过其他线程调用 notify() 或 notifyAll() 来唤醒。
+
+    - sleep() 在指定的时间过去后自动醒来。
+
+        
+
+总之，wait() 用于线程间的同步和通信，而 sleep() 只是让线程休眠，不涉及同步或通信。
+
+
+
+#### 3.1.5.5 wait() 和 notifyAll() 案例
+
+为了避免虚假唤醒，我们通常需要将 `wait()` 调用放在循环中，并检查线程是否满足继续执行的条件。这样，即使 `notifyAll()` 被调用后线程被唤醒，它也会检查条件是否满足，而不是直接执行，从而避免虚假唤醒的情况。
+
+
+
+以下是一个实现两个消费线程同时访问共享资源，并使用 `wait()` 和 `notifyAll()` 进行通信的 Java 示例代码：
+
+```java
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class ProducerConsumerExample {
+
+    private static final Object lock = new Object(); // 锁对象
+    private static int resource = 0; // 共享资源
+    private static final Logger logger = LoggerFactory.getLogger(ProducerConsumerExample.class); // 创建日志对象
+
+    // 消费者线程
+    static class Consumer extends Thread {
+        @Override
+        public void run() {
+            while (true) {
+                synchronized (lock) {
+                    // 在进入临界区时，检查资源是否可用
+                    while (resource == 0) {
+                        try {
+                            lock.wait(); // 资源不可用时，消费者等待
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+
+                    // 消费资源
+                    resource--;
+                    logger.debug("{} consumed a resource, remaining: {}", Thread.currentThread().getName(), resource);
+
+                    // 唤醒生产者线程
+                    lock.notifyAll();
+                }
+
+                try {
+                    Thread.sleep(1000); // 模拟消费过程的延迟
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
+    }
+
+    // 生产者线程
+    static class Producer extends Thread {
+        @Override
+        public void run() {
+            while (true) {
+                synchronized (lock) {
+                    // 在进入临界区时，检查资源是否已满
+                    while (resource > 0) {
+                        try {
+                            lock.wait(); // 资源已满时，生产者等待
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+
+                    // 生产资源
+                    resource++;
+                    logger.debug("{} produced a resource, remaining: {}", Thread.currentThread().getName(), resource);
+
+                    // 唤醒消费者线程
+                    lock.notifyAll();
+                }
+
+                try {
+                    Thread.sleep(1000); // 模拟生产过程的延迟
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        // 启动生产者线程
+        Thread producer1 = new Producer();
+        Thread producer2 = new Producer();
+
+        // 启动消费者线程
+        Thread consumer1 = new Consumer();
+        Thread consumer2 = new Consumer();
+
+        producer1.start();
+        producer2.start();
+        consumer1.start();
+        consumer2.start();
+    }
+}
+
+```
+
+
 
 
 
