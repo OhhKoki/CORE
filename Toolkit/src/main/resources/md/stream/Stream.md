@@ -178,7 +178,7 @@ authors.stream()
 
 执行 distinct() 的效果如下
 
-![image-20240814103916285](./assets/image-20240814103916285.png)
+![image-20240814103916285](../assets/image-20240814103916285.png)
 
 
 
@@ -205,7 +205,7 @@ authors.stream()
 
 执行 filter() 的效果如下
 
-![image-20240814104048420](./assets/image-20240814104048420.png)
+![image-20240814104048420](../assets/image-20240814104048420.png)
 
 
 
@@ -230,7 +230,7 @@ authors.stream()
 
 执行 map() 的效果如下
 
-![image-20240814104128925](./assets/image-20240814104128925.png)
+![image-20240814104128925](../assets/image-20240814104128925.png)
 
 
 
@@ -272,13 +272,13 @@ authors.stream()
 
 需求1执行 flatMap() 后，效果如下图
 
-![image-20240814105419327](./assets/image-20240814105419327.png)
+![image-20240814105419327](../assets/image-20240814105419327.png)
 
 
 
 需求2执行 flatMap() 后，效果如下图
 
-![image-20240814105453106](./assets/image-20240814105453106.png)
+![image-20240814105453106](../assets/image-20240814105453106.png)
 
 
 
@@ -310,7 +310,7 @@ authors.stream()
 
 执行 sorted() 的效果如下
 
-![image-20240814104422340](./assets/image-20240814104422340.png)
+![image-20240814104422340](../assets/image-20240814104422340.png)
 
 
 
@@ -342,7 +342,7 @@ authors.stream()
 
 执行 limit() 的效果如下
 
-![image-20240814104904919](./assets/image-20240814104904919.png)
+![image-20240814104904919](../assets/image-20240814104904919.png)
 
 
 
@@ -373,7 +373,7 @@ authors.stream()
 
 执行 skip() 的效果如下
 
-![image-20240814105117794](./assets/image-20240814105117794.png)
+![image-20240814105117794](../assets/image-20240814105117794.png)
 
 
 
@@ -416,7 +416,7 @@ authors.stream()
 
 执行 forEach() 的效果如下
 
-![image-20240814122349807](./assets/image-20240814122349807.png)
+![image-20240814122349807](../assets/image-20240814122349807.png)
 
 
 
@@ -452,13 +452,13 @@ authorMap.entrySet().stream().forEach(System.out::println);
 
 执行后 toList() 后，效果如下图
 
-![image-20240814123400963](./assets/image-20240814123400963.png)
+![image-20240814123400963](../assets/image-20240814123400963.png)
 
 
 
 执行后 toMap() 后，效果如下图
 
-![image-20240814123414177](./assets/image-20240814123414177.png)
+![image-20240814123414177](../assets/image-20240814123414177.png)
 
 
 
@@ -484,7 +484,7 @@ long count = authors.stream()
 
 执行 count() 的效果如下
 
-![image-20240814122651551](./assets/image-20240814122651551.png)
+![image-20240814122651551](../assets/image-20240814122651551.png)
 
 
 
@@ -521,7 +521,7 @@ System.out.println("max = " + max.orElse(0));
 
 执行 max() 的效果如下
 
-![image-20240814123010683](./assets/image-20240814123010683.png)
+![image-20240814123010683](../assets/image-20240814123010683.png)
 
 
 
@@ -545,7 +545,7 @@ boolean anyMatch = getAuthors().stream().anyMatch(author -> author.getAge() > 29
 
 执行后 toList() 后，效果如下图
 
-![image-20240814123731028](./assets/image-20240814123731028.png)
+![image-20240814123731028](../assets/image-20240814123731028.png)
 
 
 
@@ -577,7 +577,7 @@ first.ifPresent(author -> System.out.println(author.getName()));
 
 执行 findFirst() 的效果如下
 
-![image-20240814124206977](./assets/image-20240814124206977.png)
+![image-20240814124206977](../assets/image-20240814124206977.png)
 
 
 
@@ -607,4 +607,4 @@ System.out.println(sum);
 
 执行 reduce() 的效果如下
 
-![image-20240814124406785](./assets/image-20240814124406785.png)
+![image-20240814124406785](../assets/image-20240814124406785.png)
