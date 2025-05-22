@@ -1041,7 +1041,54 @@ ObjectMonitor 中有两个队列，WaitSet 和 EntryList，用来保存 ObjectWa
 
 
 
-### 3.1.6 synchronized 进阶
+#### 3.1.4.3 synchronized 进阶
+
+synchronized 的实现方式涉及偏向锁、轻量级锁和重量级锁。这些锁的设计目的是提升性能，减少线程争用时的开销。
+
+
+
+首先，先从字节码的角度理解 synchronize 的执行流程。执行如下代码：
+
+```java
+static final Object lock = new Object();
+static int counter = 0;
+
+public static void main(String[] args) {
+    synchronized (lock) {
+        counter++;
+    }
+}
+```
+
+
+
+得到的字节码如下：
+
+```java
+0: 	getstatic     #2		// 获取 lock 对象的引用，这个引用是 static final 类型的。#2 表示 lock 变量在常量池中的索引。
+3: 	dup									// dup 指令复制栈顶的对象引用（即 lock），为 monitorenter 指令提供必要的操作数。
+4: 	astore_1						// 将栈顶的 lock 引用存储到本地变量 1 位置。这个位置用于存储锁对象的副本。
+5: 	monitorenter				// 获取 lock 对象的监视器锁，确保同步代码块中代码的原子性。
+6: 	getstatic     #3    // 获取静态变量 counter 的值。#3 是 counter 变量在常量池中的索引。            
+9: 	iconst_1						// 将常量 1 推送到栈顶，准备与 counter 进行加法操作。
+10: iadd								// 将栈顶的两个整数相加（counter 和 1），并将结果压回栈顶。
+11: putstatic     #3    // 将栈顶的值存回 counter 变量中，完成 counter++ 操作。
+14: monitorexit					// 释放 lock 对象的监视器锁，退出同步块，确保在多个线程中不会发生竞争条件。
+15: return							// 返回方法，程序执行结束。
+
+```
+
+
+
+这段字节码展示了同步块的执行过程，锁定 `lock` 对象、修改 `counter` 的值并解锁。注意：方法级别的 synchronized 不会在字节码指令中有所体现。
+
+
+
+##### 3.1.4.3.1 偏向锁
+
+很多时候，同步代码其实只有一个线程在执行，并不存在竞争锁的情况。这时候直接加锁就会导致性能问题。偏向锁是为了优化只有一个线程访问同步代码块的情况。线程第一次访问时会获得偏向锁，并且在后续的访问中，不需要竞争锁。如果没有其他线程竞争，它就不会发生升级为轻量级锁或重量级锁的操作。
+
+
 
 
 
@@ -1057,7 +1104,11 @@ ObjectMonitor 中有两个队列，WaitSet 和 EntryList，用来保存 ObjectWa
 
 ### 3.1.6 线程状态转换
 
+
+
 ### 3.1.7 活跃性
+
+
 
 ### 3.1.8 Lock
 
