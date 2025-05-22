@@ -1772,6 +1772,74 @@ class MessageQueue {
 
 
 
+### 3.1.7 多把锁
+
+一间大屋子有两个功能：睡觉、学习，互不相干。
+
+- 现在张三要学习，里斯要睡觉，但如果只用一间屋子（一个对象锁）的话，那么并发度很低。
+- 解决方法是准备多个房间（多个对象锁）
+
+
+
+将锁的粒度细分
+
+- 好处，是可以增强并发度
+
+- 坏处，如果一个线程需要同时获得多把锁，就容易发生死锁
+
+    
+
+```java
+public class RoomExample {
+    // 创建两个房间锁，分别用于学习和睡觉
+    private final Object studyRoomLock = new Object();
+    private final Object sleepRoomLock = new Object();
+
+    public static void main(String[] args) {
+        RoomExample example = new RoomExample();
+
+        // 创建线程分别进行学习和睡觉
+        Thread zhangSanThread = new Thread(example::study);
+        Thread liSiThread = new Thread(example::sleep);
+
+        // 启动线程
+        zhangSanThread.start();
+        liSiThread.start();
+    }
+
+    // 张三学习的方法
+    public void study() {
+        synchronized (studyRoomLock) {  // 获取学习房间锁
+            logger.debug("张三开始学习");
+            try {
+                // 模拟学习时间
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            logger.debug("张三完成学习");
+        }
+    }
+
+    // 李四睡觉的方法
+    public void sleep() {
+        synchronized (sleepRoomLock) {  // 获取睡觉房间锁
+            logger.debug("李四开始睡觉");
+            try {
+                // 模拟睡觉时间
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            logger.debug("李四完成睡觉");
+        }
+    }
+}
+
+```
+
+
+
 ### 3.1.7 活跃性
 
 
