@@ -178,7 +178,7 @@ authors.stream()
 
 执行 distinct() 的效果如下
 
-![image-20240814103916285](../assets/image-20240814103916285.png)
+![image-20240814103916285](./assets/picture1.png)
 
 
 
