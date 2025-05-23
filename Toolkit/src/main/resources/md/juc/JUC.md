@@ -1675,7 +1675,7 @@ class MessageQueue {
 
 
 
-## 3.1.6 线程状态转换
+## 3.7 线程状态转换
 
 下图是线程的各个状态相互转换的示意图：
 
@@ -2366,6 +2366,197 @@ public class ProducerConsumer {
                 e.printStackTrace();
             }
         }
+    }
+}
+```
+
+
+
+## 3.12 交替输出
+
+线程 1 输出 a 5 次，线程 2 输出 b 5 次，线程 3 输出 c 5 次。现在要求输出 abcabcabcabcabc 怎么实现
+
+
+
+使用 wait() 和 notify() 实现
+
+```java
+public class Test11 {
+    public static void main(String[] args) {
+        SyncWaitNotify syncWaitNotify = new SyncWaitNotify(1, 5);
+      
+        new Thread(() -> {
+            syncWaitNotify.print(1, 2, "a");
+        }).start();
+      
+        new Thread(() -> {
+            syncWaitNotify.print(2, 3, "b");
+        }).start();
+      
+        new Thread(() -> {
+            syncWaitNotify.print(3, 1, "c");
+        }).start();
+    }
+}
+
+class SyncWaitNotify {
+    private int flag;
+    private int loopNumber;
+
+    public SyncWaitNotify(int flag, int loopNumber) {
+        this.flag = flag;
+        this.loopNumber = loopNumber;
+    }
+
+    public void print(int waitFlag, int nextFlag, String str) {
+        for (int i = 0; i < loopNumber; i++) {
+            synchronized (this) {
+                while (this.flag != waitFlag) {
+                    try {
+                        this.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                System.out.print(str);
+                flag = nextFlag;
+                this.notifyAll();
+            }
+        }
+    }
+}
+```
+
+
+
+使用 Lock 条件变量实现
+
+```java
+public class Test12 {
+    public static void main(String[] args) {
+        AwaitSignal as = new AwaitSignal(5);
+        Condition aWaitSet = as.newCondition();
+        Condition bWaitSet = as.newCondition();
+        Condition cWaitSet = as.newCondition();
+
+        new Thread(() -> {
+            as.print("a", aWaitSet, bWaitSet);
+        }).start();
+
+        new Thread(() -> {
+            as.print("b", bWaitSet, cWaitSet);
+        }).start();
+
+        new Thread(() -> {
+            as.print("c", cWaitSet, aWaitSet);
+        }).start();
+
+        as.start(aWaitSet);
+    }
+}
+
+class AwaitSignal extends ReentrantLock {
+    public void start(Condition first) {
+        this.lock();
+        try {
+            log.debug("start");
+            first.signal();
+        } finally {
+            this.unlock();
+        }
+    }
+
+    public void print(String str, Condition current, Condition next) {
+        for (int i = 0; i < loopNumber; i++) {
+            this.lock();
+            try {
+                current.await();
+                System.out.print(str);
+                next.signal();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                this.unlock();
+            }
+        }
+    }
+
+    // 循环次数
+    private int loopNumber;
+
+    public AwaitSignal(int loopNumber) {
+        this.loopNumber = loopNumber;
+    }
+}
+```
+
+
+
+使用 LockSupport 的 park() 和 unpack() 实现
+
+```java
+public class Test13 {
+    public static void main(String[] args) {
+        SyncPark syncPark = new SyncPark(5);
+
+        Thread t1 = new Thread(() -> {
+            syncPark.print("a");
+        });
+
+        Thread t2 = new Thread(() -> {
+            syncPark.print("b");
+        });
+
+        Thread t3 = new Thread(() -> {
+            syncPark.print("c");
+        });
+
+        syncPark.setThreads(t1, t2, t3);
+        syncPark.start();
+    }
+}
+
+class SyncPark {
+    private int loopNumber;
+    private Thread[] threads;
+
+    public SyncPark(int loopNumber) {
+        this.loopNumber = loopNumber;
+    }
+
+    public void setThreads(Thread... threads) {
+        this.threads = threads;
+    }
+
+    public void print(String str) {
+        for (int i = 0; i < loopNumber; i++) {
+            LockSupport.park();
+            System.out.print(str);
+            LockSupport.unpark(nextThread());
+        }
+    }
+
+    private Thread nextThread() {
+        Thread current = Thread.currentThread();
+        int index = 0;
+        for (int i = 0; i < threads.length; i++) {
+            if (threads[i] == current) {
+                index = i;
+                break;
+            }
+        }
+        if (index < threads.length - 1) {
+            return threads[index + 1];
+        } else {
+            return threads[0];
+        }
+    }
+
+    public void start() {
+        for (Thread thread : threads) {
+            thread.start();
+        }
+        LockSupport.unpark(threads[0]);
     }
 }
 ```
