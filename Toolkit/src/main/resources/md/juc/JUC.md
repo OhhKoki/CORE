@@ -2711,27 +2711,167 @@ getstatic run // 线程 t 获取 run false
 比较一下之前我们将线程安全时举的例子：假设i的初始值为0，两个线程一个 i++ 一个 i-- ，只能保证看到最新值，不能解决指令交错
 
 ```java
-getstatic i					// 线程2：获取静态变量i的值 线程内i=0
-  
-getstatic i 				// 线程1：获取静态变量i的值 线程内i=0
-iconst_1						// 线程1：准备常量1
-iadd								// 线程1：自增 线程内i=1
-putstatic i 				// 线程1：将修改后的值存入静态变量i 静态变量i=1
+getstatic i			// 线程2：获取静态变量i的值 线程内i=0
 
-iconst_1						// 线程2：准备常量1
-isub								// 线程2：自减 线程内i=-1
-putstatic i 				// 线程2：将修改后的值存入静态变量i 静态变量i=-
+getstatic i			// 线程1：获取静态变量i的值 线程内i=0
+iconst_1				// 线程1：准备常量1
+iadd						// 线程1：自增 线程内i=1
+putstatic i			// 线程1：将修改后的值存入静态变量i 静态变量i=1
+
+iconst_1				// 线程2：准备常量1
+isub						// 线程2：自减 线程内i=-1
+putstatic i			// 线程2：将修改后的值存入静态变量i 静态变量i=-1
 ```
 
 
 
-
+注意：synchronized 语句块既可以保证代码块的原子性，也同时保证代码块内变量的可见性。但缺点是 synchronized 是属于重量级操作，性能相对更低。
 
 
 
 ## 4.4 有序性
 
+在 Java 中，指令重排序（Instruction Reordering）指的是编译器、处理器或者虚拟机对代码执行顺序进行重新安排，以优化程序的执行效率。这种重排序通常发生在编译阶段、JIT（即时编译器）优化阶段，或者由 CPU 的硬件执行模型决定。其目的是为了提高程序的性能，尤其是在多核处理器上，可以减少执行时间或提高并行性。
 
+
+
+指令重排序可以在一定程度上提高程序的性能，但它也可能引入并发问题，尤其是在多线程编程中。例如，如果线程 A 执行某些操作的顺序被编译器或 CPU 重排，而线程 B 依赖于线程 A 执行的顺序，可能会导致程序的行为不可预测。
+
+
+
+为了保证多线程程序的正确性，Java 提供了 happens-before 规则。happens-before 规定了对共享变量的写操作对其它线程的读操作可见，它是可见性与有序性的一套规则总结，抛开以下 happens-before 规则，JMM 并不能保证一个线程对共享变量的写，对于其它线程对该共享变量的读可见。
+
+
+
+规则一：线程解锁 m 之前对变量的写，对于接下来对 m 加锁的其它线程对该变量的读可见。
+
+```java
+static int x;
+static Object m = new Object();
+
+public static void main(String[] args) {
+    new Thread(() -> {
+        synchronized (m) {
+            x = 10;
+        }
+    }, "t1").start();
+  
+    new Thread(() -> {
+        synchronized (m) {
+            System.out.println(x);
+        }
+    }, "t2").start();
+}
+```
+
+
+
+规则二：线程对 volatile 变量的写，对接下来其它线程对该变量的读可见
+
+```java
+volatile static int x;
+
+public static void main(String[] args) {
+    new Thread(() -> {
+        x = 10;
+    }, "t1").start();
+
+    new Thread(() -> {
+        System.out.println(x);
+    }, "t2").start();
+}
+```
+
+
+
+规则三：线程 start 前对变量的写，对该线程开始后对该变量的读可见
+
+```java
+static int x;
+
+public static void main(String[] args) {
+    x = 10;
+
+    new Thread(() -> {
+        System.out.println(x);
+    }, "t2").start();
+}
+```
+
+
+
+规则四：线程结束前对变量的写，对其它线程得知它结束后的读可见（比如其它线程调用t1.join()等待它结束）
+
+```java
+static int x;
+
+public static void main(String[] args) throws InterruptedException {
+    Thread t1 = new Thread(() -> {
+        x = 10;
+    }, "t1");
+
+    t1.start();
+    t1.join();
+
+    log.dug(x);
+}
+```
+
+
+
+规则五：线程 t1 打断 t2（interrupt）前对变量的写，对于其他线程得知 t2 被打断后对变量的读可见（通过 t2.isInterrupted）
+
+```java
+static int x;
+
+public static void main(String[] args) throws InterruptedException {
+    Thread t2 = new Thread(() -> {
+        while (true) {
+            if (Thread.currentThread().isInterrupted()) {
+                System.out.println(x);
+                break;
+            }
+        }
+    }, "t2");
+    t2.start();
+  
+    new Thread(() -> {
+        Thread.sleep(1000);
+        x = 10;
+        t2.interrupt();
+    }, "t1").start();
+  
+    while (!t2.isInterrupted()) {
+        Thread.yield();
+    }
+  
+    System.out.println(x);
+}
+```
+
+
+
+规则六：具有传递性，如果 x > y 并且 y -> z 那么有 x -> z 
+
+```java
+volatile static int x;
+static int y;
+
+public static void main(String[] args) throws InterruptedException {
+    new Thread(() -> {
+        y = 10;
+        x = 20;
+    }, "t1").start();
+    new Thread(() -> {
+        // x=20 对 t2 可见, 同时 y=10 也对 t2 可见
+        System.out.println(x);
+    }, "t2").start();
+}
+```
+
+
+
+规则七：对变量默认值（0，false，null）的写，对其它线程对该变量的读可见
 
 
 
