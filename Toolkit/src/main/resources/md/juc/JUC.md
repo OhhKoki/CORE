@@ -487,7 +487,7 @@ log.debug("主线程执行结束");
 
 
 
-# 3、共享模型
+# 3、共享模型之管程
 
 在 Java 中，**共享模型**（Shared Memory Model）指的是多个线程共享同一内存区域，通过读写共享数据来进行通信。Java 的并发编程基于这种模型，多个线程可以访问相同的变量、对象或数据结构。该模型的关键在于线程之间如何协调和同步对共享资源的访问，以避免出现竞态条件和数据不一致的问题。
 
@@ -537,7 +537,7 @@ log.debug("主线程执行结束");
 
 
 
-### 3.1.1 共享问题
+## 3.2 共享问题
 
 共享问题指的是多个线程在并发执行时，访问和修改同一共享资源时可能出现的数据不一致或竞态条件问题。
 
@@ -667,7 +667,7 @@ Thread t2 = new Thread(() -> {
 
 
 
-### 3.1.2 synchronized 入门
+## 3.3 synchronized 入门
 
 为了避免临界区的竞态条件发生，有多种手段可以达到目的。
 
@@ -798,7 +798,7 @@ public static void main(String[] args) throws InterruptedException {
 
 
 
-### 3.1.3 线程安全分析
+## 3.4 线程安全分析
 
 在Java多线程环境中，不同类型的变量具有不同的线程安全性。我们可以从成员变量、静态变量和局部变量的角度进行分析。
 
@@ -893,13 +893,13 @@ if (table.get("key") == null) {
 
 
 
-### 3.1.4 Monitor
+## 3.5 Monitor
 
 Java 的 monitor 是一种同步机制，用于控制多个线程对共享资源的访问，确保线程安全。
 
 
 
-#### 3.1.4.1 对象头
+### 3.5.1 对象头
 
 在介绍对象在内存中的组成结构前，我们先简要回顾一个对象的创建过程：
 
@@ -1021,7 +1021,7 @@ Java 的 monitor 是一种同步机制，用于控制多个线程对共享资源
 
 
 
-#### 3.4.1.2 Monitor
+### 3.5.2 Monitor
 
 什么是 Monitor？可以把它理解为一个同步工具，也可以描述为一种同步机制，它通常被描述为一个对象。与一切皆对象一样，所有的 Java 对象是天生的 Monitor，每一个 Java 对象都有成为Monitor 的潜质，因为在 Java 的设计中 ，每一个 Java 对象自打娘胎里出来就带了一把看不见的锁，它叫做内部锁或者 Monitor 锁。Moniter 也就是通常说 Synchronized 的对象锁，MarkWord 锁标识位为 10，其中指针指向的是 Monitor 对象的起始地址。
 
@@ -1073,7 +1073,7 @@ ObjectMonitor 中有两个队列，WaitSet 和 EntryList，用来保存 ObjectWa
 
 
 
-#### 3.1.4.3 synchronized 进阶
+### 3.5.3 synchronized 进阶
 
 synchronized 的实现方式涉及偏向锁、轻量级锁和重量级锁。这些锁的设计目的是提升性能，减少线程争用时的开销。需要注意的是，然后锁分为了偏向锁、轻量级锁和重量级锁，但在使用的时候，都是用的 synchronized 关键字，锁的膨胀对开发者来说是透明的。
 
@@ -1116,7 +1116,7 @@ public static void main(String[] args) {
 
 
 
-##### 3.1.4.3.1 偏向锁
+### 3.5.3.1 偏向锁
 
 很多时候，同步代码其实只有一个线程在执行，并不存在竞争锁的情况。这时候直接加锁就会导致性能问题。偏向锁是 Java 的一种锁优化方式，适用于没有线程竞争的情况。当一个线程获得锁之后，它会偏向于该线程，这意味着后续的锁请求会直接授予该线程，而不需要获取锁。只有当其他线程尝试获取锁时，偏向锁才会被撤销。
 
@@ -1180,7 +1180,7 @@ public static void main(String[] args) {
 
 
 
-##### 3.1.4.3.2 轻量级锁
+### 3.5.3.2 轻量级锁
 
 轻量级锁是为了减少锁竞争的开销。它在无竞争的情况下采用自旋的方式来获取锁，即线程尝试获取锁时，如果锁未被占用，线程会短时间内不断尝试获得锁。如果锁被占用，线程会放弃自旋，升级为重量级锁。
 
@@ -1253,7 +1253,7 @@ public static void method2() {
 
 
 
-##### 3.1.4.3.3 重量级锁
+### 3.5.3.3 重量级锁
 
 当多个线程频繁竞争同一锁时，轻量级锁会升级为重量级锁。重量级锁会使线程阻塞，操作系统需要将线程从用户态切换到内核态，开销较大。
 
@@ -1296,7 +1296,7 @@ public static void method1() {
 
 
 
-##### 3.1.4.3.4 锁自旋
+### 3.5.3.4 锁自旋
 
 重量级锁竞争的时候，还可以使用自旋来进行优化，如果当前线程自旋成功（即这时候持锁线程已经退出了同步块，释放了锁），这时当前线程就可以避免阻塞。
 
@@ -1306,7 +1306,7 @@ public static void method1() {
 
 
 
-##### 3.1.4.3.4 锁消除
+### 3.5.3.5 锁消除
 
 Java 锁消除（Lock Elimination）是 JIT（即时编译器）优化的一部分，目的是减少不必要的同步操作，以提高程序的性能。锁消除主要是在编译期间进行的，它会分析代码并尝试消除那些在执行过程中不实际需要的同步锁。
 
@@ -1344,13 +1344,13 @@ public class MyBenchmark {
 
 
 
-### 3.1.5 wait/nofity
+## 3.6 wait/nofity
 
 在 Java 中，`wait()` 和 `notify()` 是用于线程间通信的基本方法，它们属于 `Object` 类，因此可以在任何对象上调用。
 
 
 
-#### 3.1.5.1 wait()
+### 3.6.1 wait()
 
 - 作用：
 
@@ -1366,7 +1366,7 @@ public class MyBenchmark {
 
         
 
-#### 3.1.5.2 notify()
+### 3.6.2 notify()
 
 - 作用：
 
@@ -1382,7 +1382,7 @@ public class MyBenchmark {
 
         
 
-#### 3.1.5.3 notifyAll()
+### 3.6.3 notifyAll()
 
 - 作用：
     - 唤醒在当前对象监视器上等待的所有线程。
@@ -1392,7 +1392,7 @@ public class MyBenchmark {
 
 
 
-#### 3.1.5.4 wait() 和 sleep()
+### 3.6.4 wait() 和 sleep()
 
 wait() 和 sleep() 都用于暂停线程的执行，但它们有几个主要区别：
 
@@ -1418,7 +1418,7 @@ wait() 和 sleep() 都用于暂停线程的执行，但它们有几个主要区�
 
 
 
-#### 3.1.5.5 park() 和 unpark()
+### 3.6.5 park() 和 unpark()
 
 park & unpark 和 wait & notify 的区别？
 
@@ -1439,7 +1439,7 @@ park & unpark 和 wait & notify 的区别？
 
 
 
-#### 3.1.5.6 避免虚假唤醒
+### 3.6.6 避免虚假唤醒
 
 为了避免虚假唤醒，我们通常需要将 `wait()` 调用放在循环中，并检查线程是否满足继续执行的条件。这样，即使 `notifyAll()` 被调用后线程被唤醒，它也会检查条件是否满足，而不是直接执行，从而避免虚假唤醒的情况。
 
@@ -1540,7 +1540,7 @@ public class ProducerConsumerExample {
 
 
 
-#### 3.1.5.7 异步生产者与消费者
+### 3.7 异步生产者与消费者
 
 定义一个消息队列，用于生产与消费消息
 
@@ -1675,7 +1675,7 @@ class MessageQueue {
 
 
 
-### 3.1.6 线程状态转换
+## 3.1.6 线程状态转换
 
 下图是线程的各个状态相互转换的示意图：
 
@@ -1772,7 +1772,7 @@ class MessageQueue {
 
 
 
-### 3.1.7 多把锁
+## 3.8 多把锁
 
 一间大屋子有两个功能：睡觉、学习，互不相干。
 
@@ -1840,28 +1840,586 @@ public class RoomExample {
 
 
 
-### 3.1.7 活跃性
+## 3.9 活跃性
+
+在 Java 中，"活跃性"（Liveness）通常是与并发编程相关的概念。它指的是程序在多线程环境下能否在适当的时间内完成其任务，尤其是在没有出现死锁、饥饿等问题的情况下。活跃性通常包括以下几个方面：
+
+1. **死锁（Deadlock）**：当两个或多个线程在等待彼此释放资源时，会导致它们永远无法继续执行，从而造成程序停止运行。死锁的存在会影响程序的活跃性。
+
+2. **饥饿（Starvation）**：指一个线程因为得不到足够的执行机会，无法完成其任务。通常是因为其他线程获得了过多的资源或执行优先级过高。
+
+3. **活跃性保证**：在并发编程中，确保系统的所有线程都有机会执行，避免死锁或饥饿现象，确保系统能够继续运行，并最终完成预期任务。
+
+简而言之，活跃性确保程序中的线程可以按预期执行，不会被阻塞或永远等待其他线程的资源。
 
 
 
-### 3.1.8 Lock
+怎么定位死锁？
+
+1. 使用 jps 
+    - `jps` 是一个用于列出当前系统中所有运行的 Java 进程及其相关信息（比如 pid：进程 id）的工具。
+2. 使用 jstack （需要 pid ）获取到某个正在运行的 java 进程的堆栈信息 
+    - `jstack` 是 Java 提供的一个命令行工具，用于打印 Java 进程的线程堆栈信息。
 
 
 
-## 3.2 JMM（java 内存模型）
+以下是一个死锁的案列
+
+```java
+Object A = new Object();
+Object B = new Object();
+
+Thread t1 = new Thread(() -> {
+    synchronized (A) {
+        log.debug("lock A");
+        try {
+            sleep(1000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        synchronized (B) {
+            log.debug("lock B");
+            log.debug("操作...");
+        }
+    }
+}, "t1");
+
+Thread t2 = new Thread(() -> {
+    synchronized (B) {
+        log.debug("lock B");
+        try {
+            Thread.sleep(200);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        synchronized (A) {
+            log.debug("lock A");
+            log.debug("操作...");
+        }
+    }
+}, "t2");
+
+t1.start();
+t2.start();
+```
 
 
 
-## 3.3 无锁-乐观锁（非阻塞）
+在终端通过 jps 查找到正在运行的 java 进程的 pid，然后通过 jstack 查看进程信息
+
+```bash
+terry@TerrydeMacBook-Pro ~ % jps
+3844 Main
+17924 Jps
+17911 Launcher
+17912 Test10
+terry@TerrydeMacBook-Pro ~ % jstack 17912
+2025-05-23 08:32:37
+Full thread dump Java HotSpot(TM) 64-Bit Server VM (17.0.12+8-LTS-286 mixed mode, sharing):
+
+Threads class SMR info:
+_java_thread_list=0x0000600000c792a0, length=15, elements={
+0x000000011f008200, 0x000000011f00aa00, 0x000000011e878200, 0x000000011e877000,
+0x000000011e878800, 0x000000011e87a600, 0x000000011e87ac00, 0x000000012a80a400,
+0x000000011f00ca00, 0x000000012b83f600, 0x000000012b88c000, 0x000000012b80d200,
+0x000000012b898a00, 0x000000012a019200, 0x000000011f812e00
+}
+
+"Reference Handler" #2 daemon prio=10 os_prio=31 cpu=0.09ms elapsed=52.29s tid=0x000000011f008200 nid=0x4d03 waiting on condition  [0x000000016c782000]
+   java.lang.Thread.State: RUNNABLE
+	at java.lang.ref.Reference.waitForReferencePendingList(java.base@17.0.12/Native Method)
+	at java.lang.ref.Reference.processPendingReferences(java.base@17.0.12/Reference.java:253)
+	at java.lang.ref.Reference$ReferenceHandler.run(java.base@17.0.12/Reference.java:215)
+
+"Finalizer" #3 daemon prio=8 os_prio=31 cpu=0.13ms elapsed=52.29s tid=0x000000011f00aa00 nid=0x4c03 in Object.wait()  [0x000000016c98e000]
+   java.lang.Thread.State: WAITING (on object monitor)
+	at java.lang.Object.wait(java.base@17.0.12/Native Method)
+	- waiting on <0x00000006f1c02f30> (a java.lang.ref.ReferenceQueue$Lock)
+	at java.lang.ref.ReferenceQueue.remove(java.base@17.0.12/ReferenceQueue.java:155)
+	- locked <0x00000006f1c02f30> (a java.lang.ref.ReferenceQueue$Lock)
+	at java.lang.ref.ReferenceQueue.remove(java.base@17.0.12/ReferenceQueue.java:176)
+	at java.lang.ref.Finalizer$FinalizerThread.run(java.base@17.0.12/Finalizer.java:172)
+
+"Signal Dispatcher" #4 daemon prio=9 os_prio=31 cpu=0.45ms elapsed=52.28s tid=0x000000011e878200 nid=0x7903 waiting on condition  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"Service Thread" #5 daemon prio=9 os_prio=31 cpu=0.03ms elapsed=52.28s tid=0x000000011e877000 nid=0x5b03 runnable  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"Monitor Deflation Thread" #6 daemon prio=9 os_prio=31 cpu=4.08ms elapsed=52.28s tid=0x000000011e878800 nid=0x7703 runnable  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"C2 CompilerThread0" #7 daemon prio=9 os_prio=31 cpu=49.44ms elapsed=52.28s tid=0x000000011e87a600 nid=0x5d03 waiting on condition  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+   No compile task
+
+"C1 CompilerThread0" #10 daemon prio=9 os_prio=31 cpu=79.71ms elapsed=52.28s tid=0x000000011e87ac00 nid=0x5f03 waiting on condition  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+   No compile task
+
+"Sweeper thread" #11 daemon prio=9 os_prio=31 cpu=0.04ms elapsed=52.28s tid=0x000000012a80a400 nid=0x7503 runnable  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"Common-Cleaner" #12 daemon prio=8 os_prio=31 cpu=0.09ms elapsed=52.28s tid=0x000000011f00ca00 nid=0x7403 in Object.wait()  [0x000000016d8fa000]
+   java.lang.Thread.State: TIMED_WAITING (on object monitor)
+	at java.lang.Object.wait(java.base@17.0.12/Native Method)
+	- waiting on <0x00000006f1c43000> (a java.lang.ref.ReferenceQueue$Lock)
+	at java.lang.ref.ReferenceQueue.remove(java.base@17.0.12/ReferenceQueue.java:155)
+	- locked <0x00000006f1c43000> (a java.lang.ref.ReferenceQueue$Lock)
+	at jdk.internal.ref.CleanerImpl.run(java.base@17.0.12/CleanerImpl.java:140)
+	at java.lang.Thread.run(java.base@17.0.12/Thread.java:842)
+	at jdk.internal.misc.InnocuousThread.run(java.base@17.0.12/InnocuousThread.java:162)
+
+"Monitor Ctrl-Break" #13 daemon prio=5 os_prio=31 cpu=11.45ms elapsed=52.26s tid=0x000000012b83f600 nid=0x7203 runnable  [0x000000016db06000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.SocketDispatcher.read0(java.base@17.0.12/Native Method)
+	at sun.nio.ch.SocketDispatcher.read(java.base@17.0.12/SocketDispatcher.java:47)
+	at sun.nio.ch.NioSocketImpl.tryRead(java.base@17.0.12/NioSocketImpl.java:266)
+	at sun.nio.ch.NioSocketImpl.implRead(java.base@17.0.12/NioSocketImpl.java:317)
+	at sun.nio.ch.NioSocketImpl.read(java.base@17.0.12/NioSocketImpl.java:355)
+	at sun.nio.ch.NioSocketImpl$1.read(java.base@17.0.12/NioSocketImpl.java:808)
+	at java.net.Socket$SocketInputStream.read(java.base@17.0.12/Socket.java:966)
+	at sun.nio.cs.StreamDecoder.readBytes(java.base@17.0.12/StreamDecoder.java:270)
+	at sun.nio.cs.StreamDecoder.implRead(java.base@17.0.12/StreamDecoder.java:313)
+	at sun.nio.cs.StreamDecoder.read(java.base@17.0.12/StreamDecoder.java:188)
+	- locked <0x00000006f1e18598> (a java.io.InputStreamReader)
+	at java.io.InputStreamReader.read(java.base@17.0.12/InputStreamReader.java:177)
+	at java.io.BufferedReader.fill(java.base@17.0.12/BufferedReader.java:162)
+	at java.io.BufferedReader.readLine(java.base@17.0.12/BufferedReader.java:329)
+	- locked <0x00000006f1e18598> (a java.io.InputStreamReader)
+	at java.io.BufferedReader.readLine(java.base@17.0.12/BufferedReader.java:396)
+	at com.intellij.rt.execution.application.AppMainV2$1.run(AppMainV2.java:55)
+
+"Notification Thread" #14 daemon prio=9 os_prio=31 cpu=0.02ms elapsed=52.26s tid=0x000000012b88c000 nid=0x7103 runnable  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"t1" #15 prio=5 os_prio=31 cpu=2.72ms elapsed=52.17s tid=0x000000012b80d200 nid=0x6403 waiting for monitor entry  [0x000000016e12a000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+	at org.example.juc.Test10.lambda$main$0(Test10.java:22)
+	- waiting to lock <0x00000006f1ba2230> (a java.lang.Object)
+	- locked <0x00000006f1ba2220> (a java.lang.Object)
+	at org.example.juc.Test10$$Lambda$42/0x000000e80102f780.run(Unknown Source)
+	at java.lang.Thread.run(java.base@17.0.12/Thread.java:842)
+
+"t2" #16 prio=5 os_prio=31 cpu=1.49ms elapsed=52.17s tid=0x000000012b898a00 nid=0x6603 waiting for monitor entry  [0x000000016e336000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+	at org.example.juc.Test10.lambda$main$1(Test10.java:37)
+	- waiting to lock <0x00000006f1ba2220> (a java.lang.Object)
+	- locked <0x00000006f1ba2230> (a java.lang.Object)
+	at org.example.juc.Test10$$Lambda$43/0x000000e80102f9a8.run(Unknown Source)
+	at java.lang.Thread.run(java.base@17.0.12/Thread.java:842)
+
+"DestroyJavaVM" #17 prio=5 os_prio=31 cpu=115.39ms elapsed=52.17s tid=0x000000012a019200 nid=0x2903 waiting on condition  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"Attach Listener" #18 daemon prio=9 os_prio=31 cpu=1.38ms elapsed=0.10s tid=0x000000011f812e00 nid=0x7d07 waiting on condition  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"VM Thread" os_prio=31 cpu=2.01ms elapsed=52.29s tid=0x000000012b60cc20 nid=0x4903 runnable  
+
+"GC Thread#0" os_prio=31 cpu=0.17ms elapsed=52.29s tid=0x000000012b607e70 nid=0x3203 runnable  
+
+"G1 Main Marker" os_prio=31 cpu=0.02ms elapsed=52.29s tid=0x000000012b608520 nid=0x3703 runnable  
+
+"G1 Conc#0" os_prio=31 cpu=0.02ms elapsed=52.29s tid=0x000000012b608db0 nid=0x3603 runnable  
+
+"G1 Refine#0" os_prio=31 cpu=0.02ms elapsed=52.29s tid=0x0000000105605940 nid=0x5403 runnable  
+
+"G1 Service" os_prio=31 cpu=5.61ms elapsed=52.29s tid=0x00000001056061e0 nid=0x4203 runnable  
+
+"VM Periodic Task Thread" os_prio=31 cpu=20.71ms elapsed=52.26s tid=0x000000012b629150 nid=0x7003 waiting on condition  
+
+JNI global refs: 15, weak refs: 0
+
+
+Found one Java-level deadlock:
+=============================
+"t1":
+  waiting to lock monitor 0x0000600003744000 (object 0x00000006f1ba2230, a java.lang.Object),
+  which is held by "t2"
+
+"t2":
+  waiting to lock monitor 0x0000600003768340 (object 0x00000006f1ba2220, a java.lang.Object),
+  which is held by "t1"
+
+Java stack information for the threads listed above:
+===================================================
+"t1":
+	at org.example.juc.Test10.lambda$main$0(Test10.java:22)
+	- waiting to lock <0x00000006f1ba2230> (a java.lang.Object)
+	- locked <0x00000006f1ba2220> (a java.lang.Object)
+	at org.example.juc.Test10$$Lambda$42/0x000000e80102f780.run(Unknown Source)
+	at java.lang.Thread.run(java.base@17.0.12/Thread.java:842)
+"t2":
+	at org.example.juc.Test10.lambda$main$1(Test10.java:37)
+	- waiting to lock <0x00000006f1ba2220> (a java.lang.Object)
+	- locked <0x00000006f1ba2230> (a java.lang.Object)
+	at org.example.juc.Test10$$Lambda$43/0x000000e80102f9a8.run(Unknown Source)
+	at java.lang.Thread.run(java.base@17.0.12/Thread.java:842)
+
+Found 1 deadlock.
+```
 
 
 
-## 3.4 不可变
+可以发现 jstack 返回的信息中，打印出了出现死锁的线程信息
+
+```bash
+"t1" #15 prio=5 os_prio=31 cpu=2.72ms elapsed=52.17s tid=0x000000012b80d200 nid=0x6403 waiting for monitor entry  [0x000000016e12a000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+	at org.example.juc.Test10.lambda$main$0(Test10.java:22)
+	- waiting to lock <0x00000006f1ba2230> (a java.lang.Object)
+	- locked <0x00000006f1ba2220> (a java.lang.Object)
+	at org.example.juc.Test10$$Lambda$42/0x000000e80102f780.run(Unknown Source)
+	at java.lang.Thread.run(java.base@17.0.12/Thread.java:842)
+
+"t2" #16 prio=5 os_prio=31 cpu=1.49ms elapsed=52.17s tid=0x000000012b898a00 nid=0x6603 waiting for monitor entry  [0x000000016e336000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+	at org.example.juc.Test10.lambda$main$1(Test10.java:37)
+	- waiting to lock <0x00000006f1ba2220> (a java.lang.Object)
+	- locked <0x00000006f1ba2230> (a java.lang.Object)
+	at org.example.juc.Test10$$Lambda$43/0x000000e80102f9a8.run(Unknown Source)
+	at java.lang.Thread.run(java.base@17.0.12/Thread.java:842)
+```
 
 
 
-## 3.5 并发工具
+避免死锁要注意加锁顺序。另外如果由于某个线程进入了死循环，导致其它线程一直等待，对于这种情况 linux 下可以通过 top 先定位到
+
+CPU 占用高的 Java 进程，再利用 top -Hp 进程id 来定位是哪个线程，最后再用 jstack 排查。
 
 
 
-## 3.6 异步编程
+## 3.10 ReentrantLock
+
+`ReentrantLock` 是 Java 中的一个可重入锁，它实现了 `Lock` 接口，用于替代传统的 `synchronized` 关键字。`ReentrantLock` 提供了比 `synchronized` 更加灵活的锁机制，允许开发者进行更多的操作和控制。其常用方法和特性如下：
+
+
+
+### 3.10.1 基本用法
+
+   - **加锁**：使用 `lock()` 方法获取锁。
+   - **释放锁**：使用 `unlock()` 方法释放锁，必须在 `finally` 块中释放，以避免死锁。
+   ```java
+   ReentrantLock lock = new ReentrantLock();
+   
+   lock.lock(); // 获取锁
+   try {
+       // 临界区代码
+   } finally {
+       lock.unlock(); // 释放锁
+   }
+   ```
+
+
+
+### 3.10.2 可重入性
+
+`ReentrantLock` 是可重入的，即同一个线程可以多次获取锁而不会发生死锁。
+
+   ```java
+   ReentrantLock lock = new ReentrantLock();
+   
+   lock.lock();
+   try {
+       // 临界区代码
+       lock.lock(); // 重新获取锁
+       try {
+           // 进一步的临界区代码
+       } finally {
+           lock.unlock(); // 释放锁
+       }
+   } finally {
+       lock.unlock(); // 释放锁
+   }
+   ```
+
+
+
+### 3.10.3 尝试加锁
+
+使用 `tryLock()` 方法可以尝试加锁，如果锁不可用则不会阻塞，返回 `false`，否则返回 `true`。
+   ```java
+   if (lock.tryLock()) {
+       try {
+           // 临界区代码
+       } finally {
+           lock.unlock();
+       }
+   } else {
+       // 锁未获取，执行其他操作
+   }
+   ```
+
+
+
+### 3.10.4 带超时的加锁
+
+`tryLock(long time, TimeUnit unit)` 方法尝试在指定时间内获取锁，超过时间未获取则返回 `false`。
+
+   ```java
+   if (lock.tryLock(1000, TimeUnit.MILLISECONDS)) {
+       try {
+           // 临界区代码
+       } finally {
+           lock.unlock();
+       }
+   } else {
+       // 超时未获取锁，执行其他操作
+   }
+   ```
+
+
+
+### 3.10.5 中断响应的加锁
+
+`lockInterruptibly()` 方法可以在加锁时响应中断，避免线程死锁。
+
+   ```java
+   try {
+       lock.lockInterruptibly(); // 响应中断
+       try {
+           // 临界区代码
+       } finally {
+           lock.unlock();
+       }
+   } catch (InterruptedException e) {
+       // 处理中断异常
+   }
+   ```
+
+
+
+### 3.10.6 锁的公平性
+
+`ReentrantLock` 允许设置公平性，默认情况下是非公平的（即不保证线程获取锁的顺序）。如果希望确保线程按顺序获取锁，可以设置 `fair` 为 `true`。
+
+   ```java
+   ReentrantLock lock = new ReentrantLock(true); // 公平锁
+   ```
+
+
+
+### 3.10.7 获取锁的数量
+
+`ReentrantLock` 提供 `getHoldCount()` 方法返回当前线程持有该锁的次数。
+
+   ```java
+   int holdCount = lock.getHoldCount();
+   ```
+
+
+
+### 3.10.8 与 synchronized 的区别
+
+**`ReentrantLock` 和 `synchronized` 的区别是什么？**
+
+- `ReentrantLock` 提供更灵活的锁控制，例如尝试锁、带超时的锁等。
+- `ReentrantLock` 必须手动释放锁，而 `synchronized` 会自动释放锁。
+- `ReentrantLock` 可以被中断和公平性设置，而 `synchronized` 不支持这些。
+
+
+
+## 3.11 Condition
+
+`Condition` 是 Java 中 `java.util.concurrent.locks` 包的一部分，通常与 `ReentrantLock` 一起使用，用于实现线程间的协调和等待通知机制。它提供了更强大和灵活的功能来管理线程之间的同步，而不是仅仅依靠传统的 `synchronized` 块。
+
+
+
+### 3.11.1 基本用法
+
+`Condition` 的工作原理是让线程可以在某些条件下等待，直到其他线程满足特定条件并通知它们。与 `Object` 类上的 `wait()`, `notify()`, `notifyAll()` 方法相比，`Condition` 提供了更多的控制权和灵活性。
+
+
+
+#### 3.11.1.1 获取 Condition
+
+首先，你需要通过 `ReentrantLock` 创建一个 `Condition` 对象：
+```java
+ReentrantLock lock = new ReentrantLock();
+Condition condition = lock.newCondition();
+```
+
+
+
+#### 3.11.2 线程等待
+
+线程可以在 `Condition` 上调用 `await()` 方法进行等待。当条件不满足时，线程会释放锁并进入等待状态。等待期间，线程将被阻塞，直到它被其他线程通知。
+```java
+lock.lock();
+try {
+    while (/* some condition */) {
+        condition.await(); // 线程等待，释放锁
+    }
+    // 执行接下来的代码
+} finally {
+    lock.unlock();
+}
+```
+
+
+
+#### 3.11.3 通知其他线程
+
+当其他线程改变条件状态时，它们可以通过 `signal()` 或 `signalAll()` 方法通知正在等待的线程。
+- `signal()` 唤醒一个等待的线程。
+- `signalAll()` 唤醒所有等待的线程。
+
+```java
+lock.lock();
+try {
+    // 更改条件
+    condition.signal(); // 唤醒一个等待的线程
+    // 或者
+    condition.signalAll(); // 唤醒所有等待的线程
+} finally {
+    lock.unlock();
+}
+```
+
+
+
+### 3.11.2 常见的方法
+
+```java
+await()
+- 使当前线程进入等待状态，直到被其他线程唤醒。
+- 线程会自动释放锁，其他线程可以获取锁。
+
+signal()
+- 唤醒一个正在等待该 Condition 对象的线程。
+- 被唤醒的线程将重新竞争锁。
+
+signalAll()
+- 唤醒所有正在等待该 Condition 对象的线程。
+- 所有被唤醒的线程将重新竞争锁。
+
+await(long time, TimeUnit unit)
+- 等待指定的时间，或者直到被唤醒。
+- 如果在指定的时间内没有被唤醒，线程将自动返回。
+```
+
+
+
+### 3.11.3 使用案例
+
+```java
+import java.util.concurrent.locks.*;
+
+public class ProducerConsumer {
+    private static final int MAX_CAPACITY = 10;
+    private static final LinkedList<Integer> buffer = new LinkedList<>();
+    private static final ReentrantLock lock = new ReentrantLock();
+    private static final Condition notFull = lock.newCondition();
+    private static final Condition notEmpty = lock.newCondition();
+
+    public static void main(String[] args) {
+        Thread producer = new Thread(new Producer());
+        Thread consumer = new Thread(new Consumer());
+        producer.start();
+        consumer.start();
+    }
+
+    static class Producer implements Runnable {
+        @Override
+        public void run() {
+            try {
+                while (true) {
+                    lock.lock();
+                    try {
+                        while (buffer.size() == MAX_CAPACITY) {
+                            notFull.await(); // 等待直到缓冲区有空间
+                        }
+                        buffer.add(1); // 生产一个产品
+                        System.out.println("Produced, buffer size: " + buffer.size());
+                        notEmpty.signal(); // 唤醒消费者线程
+                    } finally {
+                        lock.unlock();
+                    }
+                    Thread.sleep(1000); // 模拟生产的时间
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    static class Consumer implements Runnable {
+        @Override
+        public void run() {
+            try {
+                while (true) {
+                    lock.lock();
+                    try {
+                        while (buffer.isEmpty()) {
+                            notEmpty.await(); // 等待直到缓冲区有产品
+                        }
+                        buffer.remove(); // 消费一个产品
+                        System.out.println("Consumed, buffer size: " + buffer.size());
+                        notFull.signal(); // 唤醒生产者线程
+                    } finally {
+                        lock.unlock();
+                    }
+                    Thread.sleep(1500); // 模拟消费的时间
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+}
+```
+
+
+
+# 4、共享模型之内存
+
+
+
+## 4.1 JMM
+
+
+
+## 4.2 可见性
+
+
+
+## 4.2 有序性
+
+
+
+## 4.3 原子性
+
+
+
+
+
+# 5、共享模型之无锁
+
+## 5.1 CAS 和 volatile
+
+## 5.2 原子整数
+
+## 5.3  原子引用
+
+## 5.4 原子数组
+
+## 5.5 原子累加
+
+## 5.6 Unsafe
+
+
+
+# 6、共享模型之不可变
+
+
+
+# 7、共享模型之工具
+
+
+
+## 7.1 线程池
+
+
+
+## 7.2 JUC
