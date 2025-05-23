@@ -2563,6 +2563,33 @@ class SyncPark {
 
 
 
+## 3.13 章节总结
+
+本章我们需要重点掌握的是
+
+- 分析多线程访问共享资源时，哪些代码片段属于临界区
+- 使用 synchronized 互斥解决临界区的线程安全问题
+    - 掌握 synchronized 锁对象语法
+    - 掌握 synchronzied 加载成员方法和静态方法语法
+    - 掌握 wait/notify 同步方法
+- 使用 lock 互斥解决临界区的线程安全问题
+    - 掌握 lock 的使用细节：可打断、锁超时、公平锁、条件变量
+- 学会分析变量的线程安全性、掌握常见线程安全类的使用
+- 了解线程活跃性问题：死锁、活锁、饥饿
+- 应用方面
+    - 互斥：使用 synchronized 或 Lock 达到共享资源互斥效果
+    - 同步：使用 wait/notify 或 Lock 的条件变量来达到线程间通信效果
+- 原理方面
+    - monitor、synchronized 、wait/notify 原理
+    - synchronized 进阶原理
+    - park & unpark 原理
+- 模式方面
+    - 同步模式之保护性暂停
+    - 异步模式之生产者消费者
+    - 同步模式之顺序控制
+
+
+
 # 4、共享模型之内存
 
 
