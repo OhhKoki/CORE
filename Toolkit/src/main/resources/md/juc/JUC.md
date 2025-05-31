@@ -3212,7 +3212,7 @@ boolean updated = markableRef.compareAndSet("Updated Value", "New Value", true, 
 
 ### 5.3.3 AtomicStampedReference
 
-`AtomicStampedReference<T>` 也是一个原子引用类，它存储了一个对象引用和一个整数“时间戳”（或版本号）。这个版本号可以用于解决ABA问题，即避免多个线程对同一对象进行更新时发生意外的覆盖问题。
+`AtomicStampedReference<T>` 也是一个原子引用类，它存储了一个对象引用和一个整数版本号。这个版本号可以用于解决ABA问题，即避免多个线程对同一对象进行更新时发生意外的覆盖问题。
 
 - **`getReference()`**：返回当前引用的值。
 - **`getStamp()`**：返回当前版本号。
