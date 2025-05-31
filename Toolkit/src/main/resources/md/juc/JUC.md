@@ -3087,7 +3087,7 @@ Java 的原子引用类（`AtomicBoolean`, `AtomicInteger`, `AtomicLong`）提�
 
 
 
-### 5.2.1. AtomicBoolean
+### 5.2.1 AtomicBoolean
 
 `AtomicBoolean` 提供了对 `boolean` 类型的原子操作，用于处理布尔值的并发更新。
 
@@ -3170,7 +3170,7 @@ Java的原子引用（`AtomicReference`、`AtomicMarkableReference` 和 `AtomicS
 
 
 
-### 5.3.1. AtomicReference
+### 5.3.1 AtomicReference
 `AtomicReference<T>` 是一个原子引用类，用于操作引用类型的对象。它能够保证在多线程环境下对对象的读取、更新是原子的。
 
 - **`get()`**：返回当前引用的值。
@@ -3231,6 +3231,123 @@ boolean success = stampedRef.compareAndSet("Initial Value", "Updated Value", 1, 
 
 
 ## 5.4 原子数组
+
+在Java中，`AtomicIntegerArray`、`AtomicLongArray` 和 `AtomicReferenceArray` 都是原子数组类，用于实现对数组元素的线程安全操作。它们提供了对数组元素的原子操作，确保在多线程环境中不会发生数据竞争问题。下面是这些类的用法总结：
+
+
+
+### 5.4.1 AtomicIntegerArray
+
+`AtomicIntegerArray` 是一个整型的原子数组，它提供了一些原子方法来对数组元素进行操作。
+
+- `get(int index)`：获取指定索引位置的元素值。
+- `set(int index, int value)`：设置指定索引位置的元素为 `value`。
+- `getAndSet(int index, int value)`：原子地将指定索引位置的元素设置为 `value`，并返回原来的值。
+- `getAndIncrement(int index)`：原子地将指定索引位置的元素值加1，并返回加之前的值。
+- `incrementAndGet(int index)`：原子地将指定索引位置的元素值加1，并返回加之后的值。
+- `addAndGet(int index, int)`：原子地将指定索引位置的元素值加上 ``，并返回加之后的值。
+- `compareAndSet(int index, int expect, int update)`：如果指定索引位置的元素值等于 `expect`，则原子地将其设置为 `update`。
+
+使用示例：
+
+```java
+import java.util.concurrent.atomic.AtomicIntegerArray;
+
+public class AtomicIntegerArrayExample {
+    public static void main(String[] args) {
+        AtomicIntegerArray array = new AtomicIntegerArray(5); // 初始化一个长度为5的原子数组
+
+        // 设置索引0的元素为10
+        array.set(0, 10);
+
+        // 获取索引0的元素
+        System.out.println(array.get(0)); // 输出：10
+
+        // 原子地将索引0的元素加1
+        array.incrementAndGet(0);
+        System.out.println(array.get(0)); // 输出：11
+
+        // 使用compareAndSet进行原子更新
+        array.compareAndSet(0, 11, 20);
+        System.out.println(array.get(0)); // 输出：20
+    }
+}
+```
+
+
+
+### 5.4.2 AtomicLongArray
+
+`AtomicLongArray` 是一个长整型的原子数组，提供类似于 `AtomicIntegerArray` 的功能，适用于长整型数据。
+
+- `get(int index)`：获取指定索引位置的元素值。
+- `set(int index, long value)`：设置指定索引位置的元素为 `value`。
+- `getAndSet(int index, long value)`：原子地将指定索引位置的元素设置为 `value`，并返回原来的值。
+- `getAndIncrement(int index)`：原子地将指定索引位置的元素值加1，并返回加之前的值。
+- `incrementAndGet(int index)`：原子地将指定索引位置的元素值加1，并返回加之后的值。
+- `addAndGet(int index, long)`：原子地将指定索引位置的元素值加上 ``，并返回加之后的值。
+- `compareAndSet(int index, long expect, long update)`：如果指定索引位置的元素值等于 `expect`，则原子地将其设置为 `update`。
+
+使用示例：
+
+```java
+import java.util.concurrent.atomic.AtomicLongArray;
+
+public class AtomicLongArrayExample {
+    public static void main(String[] args) {
+        AtomicLongArray array = new AtomicLongArray(5); // 初始化一个长度为5的原子数组
+
+        // 设置索引0的元素为100L
+        array.set(0, 100L);
+
+        // 获取索引0的元素
+        System.out.println(array.get(0)); // 输出：100
+
+        // 原子地将索引0的元素加1
+        array.incrementAndGet(0);
+        System.out.println(array.get(0)); // 输出：101
+
+        // 使用compareAndSet进行原子更新
+        array.compareAndSet(0, 101L, 200L);
+        System.out.println(array.get(0)); // 输出：200
+    }
+}
+```
+
+
+
+### 5.4.3 AtomicReferenceArray
+
+`AtomicReferenceArray` 是一个引用类型的原子数组，可以用于存储对象类型的数组，确保对引用元素的线程安全操作。
+
+- `get(int index)`：获取指定索引位置的元素。
+- `set(int index, V value)`：设置指定索引位置的元素为 `value`。
+- `getAndSet(int index, V value)`：原子地将指定索引位置的元素设置为 `value`，并返回原来的值。
+- `compareAndSet(int index, V expect, V update)`：如果指定索引位置的元素值等于 `expect`，则原子地将其设置为 `update`。
+
+使用示例：
+
+```java
+import java.util.concurrent.atomic.AtomicReferenceArray;
+
+public class AtomicReferenceArrayExample {
+    public static void main(String[] args) {
+        AtomicReferenceArray<String> array = new AtomicReferenceArray<>(5); // 初始化一个长度为5的原子数组
+
+        // 设置索引0的元素为"Hello"
+        array.set(0, "Hello");
+
+        // 获取索引0的元素
+        System.out.println(array.get(0)); // 输出：Hello
+
+        // 原子地将索引0的元素更新为"World"
+        array.compareAndSet(0, "Hello", "World");
+        System.out.println(array.get(0)); // 输出：World
+    }
+}
+```
+
+
 
 ## 5.5 原子累加
 
