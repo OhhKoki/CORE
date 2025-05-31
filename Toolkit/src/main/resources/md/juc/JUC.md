@@ -2877,13 +2877,180 @@ public static void main(String[] args) throws InterruptedException {
 
 # 5、共享模型之无锁
 
-test
+Java共享模型中的无锁技术是指在多线程环境下，通过避免使用传统的锁机制（如`synchronized`或`ReentrantLock`）来保证数据的一致性和线程安全。无锁编程通常依赖于原子操作和内存屏障，使用CAS（Compare-and-Swap）等技术进行高效的并发控制。这种方式可以避免锁竞争带来的性能瓶颈，适用于高并发、高性能的场景，如Java中的`java.util.concurrent`包中的一些类（如`AtomicInteger`、`AtomicReference`等）就实现了无锁机制。
+
+
+
+通过无锁技术，线程可以在不阻塞的情况下对共享资源进行操作，从而提升程序的执行效率，减少延迟和开销。
 
 
 
 ## 5.1 CAS 和 volatile
 
+在Java中，CAS（Compare-And-Swap）是一种原子操作，常用于并发编程中。CAS操作用于在多线程环境下实现数据的同步，避免使用传统的锁机制（如`sychronized`关键字），从而提高性能。
+
+
+
+CAS的核心思想是：在进行更新操作时，先检查某个值是否与预期值相等，如果相等，就将该值更新为新值；如果不相等，表示该值已经被其他线程修改过，那么CAS操作会失败，通常会尝试重新执行该操作，直到成功为止。
+
+
+
+CAS操作通常由硬件提供支持，它是乐观锁的一种实现方式。Java的`java.util.concurrent`包中的一些并发工具类（如`AtomicInteger`、`AtomicLong`等）就使用了CAS来保证线程安全。
+
+
+
+CAS操作的优点：
+1. 无需加锁，避免了线程阻塞和上下文切换的开销。
+
+2. 性能较高，特别适用于高并发场景。
+
+   
+
+CAS的缺点：
+1. 可能会导致"ABA问题"（即值可能在两次比较之间被修改为相同的值），为了解决这个问题，可以使用带版本号的CAS操作。
+2. 适用于简单的数据更新操作，复杂的更新操作仍然需要其他同步机制。
+
+
+
+下面是两个使用 CAS 的示例，展示了没有 CAS 和使用 CAS 的不同情况。
+
+
+
+**没有使用CAS的情况下，存在线程安全问题**
+
+在这个例子中，我们有一个简单的计数器类，多个线程并发地更新计数器，但没有使用CAS来保证线程安全。由于多个线程可能同时读取和更新`count`值，导致数据竞争和线程安全问题。
+
+```java
+public class CounterWithoutCAS {
+    private int count = 0;
+
+    // 增加计数的方法
+    public void increment() {
+        // 这里是非原子的操作，多个线程同时执行时会发生线程安全问题
+        count++;
+    }
+
+    // 获取计数值
+    public int getCount() {
+        return count;
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        CounterWithoutCAS counter = new CounterWithoutCAS();
+
+        // 启动多个线程并发增加计数
+        Thread[] threads = new Thread[1000];
+        for (int i = 0; i < 1000; i++) {
+            threads[i] = new Thread(() -> {
+                for (int j = 0; j < 1000; j++) {
+                    // 多个线程并发修改count值
+                    counter.increment();
+                }
+            });
+            threads[i].start();
+        }
+
+        // 等待所有线程完成
+        for (Thread thread : threads) {
+            thread.join();
+        }
+
+        // 由于没有线程安全保护，输出的结果通常小于预期值1000000
+        System.out.println("最终计数值：" + counter.getCount());
+    }
+}
+```
+
+
+
+运行这个程序时，由于多个线程并发修改`count`值，没有使用CAS保护，所以最终的计数结果往往小于预期的1000000。这是因为`count++`操作并不是原子的，多个线程在读取和更新`count`时可能会覆盖彼此的修改，导致丢失更新。
+
+
+
+**使用CAS对案例1进行改造，解决线程安全问题**
+
+通过`AtomicInteger`类来改造这个案例。`AtomicInteger`类内部实现了CAS操作，能够保证对`count`的更新是线程安全的。
+
+```java
+public class CounterWithCAS {
+    private AtomicInteger count = new AtomicInteger(0);
+
+    // 增加计数的方法，使用CAS确保线程安全
+    public void increment() {
+        // CAS操作，原子地增加count
+        count.incrementAndGet();
+    }
+
+    // 获取计数值
+    public int getCount() {
+        return count.get();
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        CounterWithCAS counter = new CounterWithCAS();
+
+        // 启动多个线程并发增加计数
+        Thread[] threads = new Thread[1000];
+        for (int i = 0; i < 1000; i++) {
+            threads[i] = new Thread(() -> {
+                for (int j = 0; j < 1000; j++) {
+                    // 使用CAS保证线程安全
+                    counter.increment();
+                }
+            });
+            threads[i].start();
+        }
+
+        // 等待所有线程完成
+        for (Thread thread : threads) {
+            thread.join();
+        }
+
+        // 由于使用CAS保护，最终计数值应该是1000000
+        System.out.println("最终计数值：" + counter.getCount());
+    }
+}
+```
+
+
+
+运行这个程序时，由于使用了`AtomicInteger`，它内部使用了CAS操作来保证对`count`值的更新是线程安全的。因此，最终的计数值将正确地为1000000，符合预期。
+
+
+
+前面看到的 AtomicInteger 的解决方法，内部并没有用锁来保护共享变量的线程安全。那么它是如何实现的呢？CAS 如何工作呢？
+
+1. CAS 是一种原子操作，它有三个操作数：
+
+   1. **内存位置（V）**：要更新的共享变量的地址。
+   2. **预期值（A）**：当前内存位置的预期值，通常是读出来的当前值。
+   3. **新值（B）**：要写入内存位置的值。
+
+2. CAS 操作的基本步骤是：
+
+   1. **读取**：从内存位置读取当前的值（A）。
+
+   2. **比较**：将当前值与预期值（A）进行比较。
+
+   3. **交换**：如果当前值等于预期值（A），则将内存位置的值替换为新值（B）；如果不相等，则什么都不做。
+
+      
+
+CAS 保证了 **原子性**（硬件层面保证原子性：`lock cmpxchg` 指令），也就是说，在一个线程执行 CAS 操作时，其他线程不能干扰这个操作。因此，即使多个线程并发地更新同一个变量，CAS 也能确保只有一个线程的更新会成功，其它线程会重试，直到它们成功为止。
+
+
+
+`AtomicInteger` 是基于 CAS 实现的线程安全整数类。它通过底层的原子操作来确保对整数值的更新是无锁的。 `AtomicInteger` 底层使用 `volatile` 关键字来保证对值的可见性，并且通过 `unsafe.compareAndSwapInt` 或 `sun.misc.Unsafe` 类来执行 CAS 操作。
+
+
+
 ## 5.2 原子整数
+
+
+
+
+
+
 
 ## 5.3  原子引用
 
