@@ -101,6 +101,9 @@ docker pull -q nginx
 
 # 拉取 Alpine 镜像的所有版本
 docker pull -a alpine
+
+# 使用指定镜像源下载镜像：docker pull 镜像源/镜像名
+docker pull docker.xuanyuan.me/redis
 ```
 
 
