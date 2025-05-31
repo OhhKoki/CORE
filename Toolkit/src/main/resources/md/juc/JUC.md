@@ -3245,33 +3245,28 @@ boolean success = stampedRef.compareAndSet("Initial Value", "Updated Value", 1, 
 - `getAndSet(int index, int value)`：原子地将指定索引位置的元素设置为 `value`，并返回原来的值。
 - `getAndIncrement(int index)`：原子地将指定索引位置的元素值加1，并返回加之前的值。
 - `incrementAndGet(int index)`：原子地将指定索引位置的元素值加1，并返回加之后的值。
-- `addAndGet(int index, int)`：原子地将指定索引位置的元素值加上 ``，并返回加之后的值。
+- `addAndGet(int index, int delta)`：原子地将指定索引位置的元素值加上 `delta`，并返回加之后的值。
 - `compareAndSet(int index, int expect, int update)`：如果指定索引位置的元素值等于 `expect`，则原子地将其设置为 `update`。
 
 使用示例：
 
 ```java
-import java.util.concurrent.atomic.AtomicIntegerArray;
+// 初始化一个长度为5的原子数组
+AtomicIntegerArray array = new AtomicIntegerArray(5);
 
-public class AtomicIntegerArrayExample {
-    public static void main(String[] args) {
-        AtomicIntegerArray array = new AtomicIntegerArray(5); // 初始化一个长度为5的原子数组
+// 设置索引0的元素为10
+array.set(0, 10);
 
-        // 设置索引0的元素为10
-        array.set(0, 10);
+// 获取索引0的元素
+System.out.println(array.get(0)); // 输出：10
 
-        // 获取索引0的元素
-        System.out.println(array.get(0)); // 输出：10
+// 原子地将索引0的元素加1
+array.incrementAndGet(0);
+System.out.println(array.get(0)); // 输出：11
 
-        // 原子地将索引0的元素加1
-        array.incrementAndGet(0);
-        System.out.println(array.get(0)); // 输出：11
-
-        // 使用compareAndSet进行原子更新
-        array.compareAndSet(0, 11, 20);
-        System.out.println(array.get(0)); // 输出：20
-    }
-}
+// 使用compareAndSet进行原子更新
+array.compareAndSet(0, 11, 20);
+System.out.println(array.get(0)); // 输出：20
 ```
 
 
@@ -3285,33 +3280,28 @@ public class AtomicIntegerArrayExample {
 - `getAndSet(int index, long value)`：原子地将指定索引位置的元素设置为 `value`，并返回原来的值。
 - `getAndIncrement(int index)`：原子地将指定索引位置的元素值加1，并返回加之前的值。
 - `incrementAndGet(int index)`：原子地将指定索引位置的元素值加1，并返回加之后的值。
-- `addAndGet(int index, long)`：原子地将指定索引位置的元素值加上 ``，并返回加之后的值。
+- `addAndGet(int index, long delta)`：原子地将指定索引位置的元素值加上 `delta`，并返回加之后的值。
 - `compareAndSet(int index, long expect, long update)`：如果指定索引位置的元素值等于 `expect`，则原子地将其设置为 `update`。
 
 使用示例：
 
 ```java
-import java.util.concurrent.atomic.AtomicLongArray;
+// 初始化一个长度为5的原子数组
+AtomicLongArray array = new AtomicLongArray(5);
 
-public class AtomicLongArrayExample {
-    public static void main(String[] args) {
-        AtomicLongArray array = new AtomicLongArray(5); // 初始化一个长度为5的原子数组
+// 设置索引0的元素为100L
+array.set(0, 100L);
 
-        // 设置索引0的元素为100L
-        array.set(0, 100L);
+// 获取索引0的元素
+System.out.println(array.get(0)); // 输出：100
 
-        // 获取索引0的元素
-        System.out.println(array.get(0)); // 输出：100
+// 原子地将索引0的元素加1
+array.incrementAndGet(0);
+System.out.println(array.get(0)); // 输出：101
 
-        // 原子地将索引0的元素加1
-        array.incrementAndGet(0);
-        System.out.println(array.get(0)); // 输出：101
-
-        // 使用compareAndSet进行原子更新
-        array.compareAndSet(0, 101L, 200L);
-        System.out.println(array.get(0)); // 输出：200
-    }
-}
+// 使用compareAndSet进行原子更新
+array.compareAndSet(0, 101L, 200L);
+System.out.println(array.get(0)); // 输出：200
 ```
 
 
@@ -3328,30 +3318,117 @@ public class AtomicLongArrayExample {
 使用示例：
 
 ```java
-import java.util.concurrent.atomic.AtomicReferenceArray;
+// 初始化一个长度为5的原子数组
+AtomicReferenceArray<String> array = new AtomicReferenceArray<>(5);
 
-public class AtomicReferenceArrayExample {
+// 设置索引0的元素为"Hello"
+array.set(0, "Hello");
+
+// 获取索引0的元素
+System.out.println(array.get(0)); // 输出：Hello
+
+// 原子地将索引0的元素更新为"World"
+array.compareAndSet(0, "Hello", "World");
+System.out.println(array.get(0)); // 输出：World
+```
+
+
+
+## 5.5 字段更新器
+
+Java中的字段更新器（Field Updater）是一组特殊的原子类，用于通过反射机制对特定类型的字段进行原子操作。这些类可以确保对字段的更新是线程安全的，避免了在多线程环境中进行常规操作时可能发生的竞态条件。常用的字段更新器包括`AtomicReferenceFieldUpdater`、`AtomicIntegerFieldUpdater`和`AtomicLongFieldUpdater`，它们分别针对不同类型的字段进行原子更新。
+
+
+
+### 5.5.1 **AtomicReferenceFieldUpdater**
+
+`AtomicReferenceFieldUpdater`是用来原子性地更新字段类型为引用类型（即`Object`类型）的类。它允许你以线程安全的方式对对象的字段进行更新。
+
+- `get(T obj)`：获取字段的当前值。
+- `set(T obj, V newValue)`：将字段的值设置为`newValue`。
+- `compareAndSet(T obj, V expect, V update)`：如果字段当前值等于`expect`，则将其更新为`update`，并返回`true`；否则返回`false`。
+
+使用示例：
+
+```java
+class Person {
+    volatile String name;
+}
+
+public class Updater {
     public static void main(String[] args) {
-        AtomicReferenceArray<String> array = new AtomicReferenceArray<>(5); // 初始化一个长度为5的原子数组
+        Person person = new Person();
+        Updater<Person, String> updater = Updater.newUpdater(Person.class, String.class, "name");
 
-        // 设置索引0的元素为"Hello"
-        array.set(0, "Hello");
-
-        // 获取索引0的元素
-        System.out.println(array.get(0)); // 输出：Hello
-
-        // 原子地将索引0的元素更新为"World"
-        array.compareAndSet(0, "Hello", "World");
-        System.out.println(array.get(0)); // 输出：World
+        updater.set(person, "John");
+        System.out.println(updater.get(person)); // 输出 John
     }
 }
 ```
 
 
 
-## 5.5 原子累加
+### 5.5.2 **AtomicIntegerFieldUpdater**
 
-## 5.6 Unsafe
+`AtomicIntegerFieldUpdater`是用于对`int`类型的字段进行原子更新的类。它的操作类似于`AtomicReferenceFieldUpdater`，但是专门针对`int`类型的字段提供原子性支持。
+
+- `get(T obj)`：获取字段的当前值。
+- `set(T obj, int newValue)`：将字段的值设置为`newValue`。
+- `compareAndSet(T obj, int expect, int update)`：如果字段当前值等于`expect`，则将其更新为`update`，并返回`true`，否则返回`false`。
+- `getAndSet(T obj, int newValue)`：获取字段的当前值并将其设置为`newValue`。
+
+使用示例：
+
+```java
+class Counter {
+    volatile int count;
+}
+
+public class Updater {
+    public static void main(String[] args) {
+        Counter counter = new Counter();
+        Updater<Counter> updater = Updater.newUpdater(Counter.class, "count");
+        updater.incrementAndGet(counter);
+        System.out.println(updater.get(counter)); // 输出 1
+    }
+}
+```
+
+
+
+### 5.5.3 **AtomicLongFieldUpdater**
+
+`AtomicLongFieldUpdater`与`AtomicIntegerFieldUpdater`类似，只不过它针对`long`类型的字段进行原子操作。它提供了一些用于`long`类型字段的原子方法。
+
+- `get(T obj)`：获取字段的当前值。
+- `set(T obj, long newValue)`：将字段的值设置为`newValue`。
+- `compareAndSet(T obj, long expect, long update)`：如果字段当前值等于`expect`，则将其更新为`update`，并返回`true`，否则返回`false`。
+- `getAndSet(T obj, long newValue)`：获取字段的当前值并将其设置为`newValue`。
+
+使用示例：
+
+```java
+class Timer {
+    volatile long time;
+}
+
+public class Updater {
+    public static void main(String[] args) {
+        Timer timer = new Timer();
+        Updater<Timer> updater = Updater.newUpdater(Timer.class, "time");
+        updater.addAndGet(timer, 10);
+        System.out.println(updater.get(timer)); // 输出 10
+    }
+}
+```
+
+
+
+## 5.6 原子累加器
+
+
+
+## 5.7 Unsafe
 
 
 
