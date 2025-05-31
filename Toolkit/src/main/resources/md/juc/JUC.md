@@ -2877,6 +2877,10 @@ public static void main(String[] args) throws InterruptedException {
 
 # 5、共享模型之无锁
 
+test
+
+
+
 ## 5.1 CAS 和 volatile
 
 ## 5.2 原子整数
