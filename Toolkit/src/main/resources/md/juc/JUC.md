@@ -3077,7 +3077,7 @@ while (true) {
 
 流程如下
 
-<img src="./assets/picture27.png" alt="image" style="zoom: 50%;" />
+<img src="./assets/picture27.png" alt="image" style="zoom: 33%;" />
 
 
 
