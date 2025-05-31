@@ -2899,6 +2899,10 @@ CAS操作通常由硬件提供支持，它是乐观锁的一种实现方式。Ja
 
 
 
+需要注意的是：CAS 必须借助 volatile 才能读取到共享变量的最新值来实现【比较并交换】的效果。
+
+
+
 CAS操作的优点：
 1. 无需加锁，避免了线程阻塞和上下文切换的开销。
 
@@ -3079,13 +3083,152 @@ while (true) {
 
 ## 5.2 原子整数
 
+Java 的原子引用类（`AtomicBoolean`, `AtomicInteger`, `AtomicLong`）提供了在并发环境下对基本数据类型（布尔值、整数、长整数）的线程安全操作。它们都位于 `java.util.concurrent.atomic` 包中，能够避免使用传统的锁机制（如 `synchronized` 或 `ReentrantLock`），提高并发性能。
 
 
 
+### 5.2.1. AtomicBoolean
+
+`AtomicBoolean` 提供了对 `boolean` 类型的原子操作，用于处理布尔值的并发更新。
+
+- `get()`: 获取当前值。
+- `set(boolean newValue)`: 设置新值。
+- `getAndSet(boolean newValue)`: 获取当前值并设置为新值。
+- `compareAndSet(boolean expect, boolean update)`: 如果当前值为 `expect`，则将其设置为 `update`。
+
+使用示例：
+
+```java
+AtomicBoolean atomicBoolean = new AtomicBoolean(true);
+boolean currentValue = atomicBoolean.get();
+atomicBoolean.set(false);
+boolean oldValue = atomicBoolean.getAndSet(false);
+boolean success = atomicBoolean.compareAndSet(true, false);
+```
+
+
+
+### 5.2.2 AtomicInteger
+
+`AtomicInteger` 提供了对 `int` 类型的原子操作，适用于需要线程安全整数操作的场景。
+
+- `get()`: 获取当前值。
+- `set(int newValue)`: 设置新值。
+- `getAndSet(int newValue)`: 获取当前值并设置为新值。
+- `compareAndSet(int expect, int update)`: 如果当前值为 `expect`，则将其更新为 `update`。
+- `incrementAndGet()`: 原子地增加值并返回新值。
+- `getAndIncrement()`: 获取当前值并增加。
+- `decrementAndGet()`: 原子地减少值并返回新值。
+- `getAndDecrement()`: 获取当前值并减少。
+- `addAndGet(int)`: 原子地增加指定增量并返回新值。
+- `getAndAdd(int)`: 获取当前值并增加指定增量。
+
+使用示例：
+
+```java
+AtomicInteger atomicInteger = new AtomicInteger(0);
+int currentValue = atomicInteger.get();
+atomicInteger.set(10);
+int newValue = atomicInteger.incrementAndGet();
+boolean success = atomicInteger.compareAndSet(10, 20);
+int addedValue = atomicInteger.addAndGet(5);
+```
+
+
+
+### 5.2.3 AtomicLong
+
+`AtomicLong` 提供了对 `long` 类型的原子操作，适用于大范围整数的线程安全操作。
+
+- `get()`: 获取当前值。
+- `set(long newValue)`: 设置新值。
+- `getAndSet(long newValue)`: 获取当前值并设置为新值。
+- `compareAndSet(long expect, long update)`: 如果当前值为 `expect`，则将其更新为 `update`。
+- `incrementAndGet()`: 原子地增加值并返回新值。
+- `getAndIncrement()`: 获取当前值并增加。
+- `decrementAndGet()`: 原子地减少值并返回新值。
+- `getAndDecrement()`: 获取当前值并减少。
+- `addAndGet(long)`: 原子地增加指定增量并返回新值。
+- `getAndAdd(long)`: 获取当前值并增加指定增量。
+
+使用示例：
+
+```java
+AtomicLong atomicLong = new AtomicLong(1000);
+long currentValue = atomicLong.get();
+atomicLong.set(2000);
+long newValue = atomicLong.incrementAndGet();
+boolean success = atomicLong.compareAndSet(2000, 3000);
+long addedValue = atomicLong.addAndGet(500);
+```
 
 
 
 ## 5.3  原子引用
+
+Java的原子引用（`AtomicReference`、`AtomicMarkableReference` 和 `AtomicStampedReference`）是用于原子操作对象引用的类，通常用于多线程环境中，以保证在并发环境下操作对象时的数据一致性。它们都位于`java.util.concurrent.atomic`包中，利用CAS（Compare-And-Swap）机制来确保操作的原子性。
+
+
+
+### 5.3.1. AtomicReference
+`AtomicReference<T>` 是一个原子引用类，用于操作引用类型的对象。它能够保证在多线程环境下对对象的读取、更新是原子的。
+
+- **`get()`**：返回当前引用的值。
+- **`set(T newValue)`**：设置当前引用为 `newValue`。
+- **`getAndSet(T newValue)`**：获取当前值，并将当前引用更新为 `newValue`。这个操作是原子的。
+- **`compareAndSet(T expect, T update)`**：如果当前引用等于 `expect`，则原子地将其更新为 `update`。返回值为 `true` 表示更新成功，`false` 表示更新失败。
+
+使用示例：
+
+```java
+AtomicReference<String> ref = new AtomicReference<>("Initial Value");
+ref.set("Updated Value");
+String current = ref.get();
+boolean isUpdated = ref.compareAndSet("Updated Value", "New Value");
+```
+
+
+
+### 5.3.2 AtomicMarkableReference
+
+`AtomicMarkableReference<T>` 是一个原子引用类，它除了存储对象引用外，还可以存储一个布尔标记。这个布尔标记可以用于表示对象的状态或标记一些元数据，适用于需要在原子操作中维护标记或状态的场景。
+
+- **`getReference()`**：返回当前引用的值。
+- **`getMark()`**：返回当前标记值。
+- **`set(T newReference, boolean newMark)`**：设置引用和标记。
+- **`compareAndSet(T expectedReference, T newReference, boolean expectedMark, boolean newMark)`**：如果当前引用和标记分别等于 `expectedReference` 和 `expectedMark`，则原子地更新为新的引用和新的标记。
+
+使用示例：
+
+```java
+AtomicMarkableReference<String> markableRef = new AtomicMarkableReference<>("Initial Value", false);
+String ref = markableRef.getReference();
+boolean mark = markableRef.getMark();
+markableRef.set("Updated Value", true);
+boolean updated = markableRef.compareAndSet("Updated Value", "New Value", true, false);
+```
+
+
+
+### 5.3.3 AtomicStampedReference
+
+`AtomicStampedReference<T>` 也是一个原子引用类，它存储了一个对象引用和一个整数“时间戳”（或版本号）。这个版本号可以用于解决ABA问题，即避免多个线程对同一对象进行更新时发生意外的覆盖问题。
+
+- **`getReference()`**：返回当前引用的值。
+- **`getStamp()`**：返回当前版本号。
+- **`set(T newReference, int newStamp)`**：设置新的引用和版本号。
+- **`compareAndSet(T expectedReference, T newReference, int expectedStamp, int newStamp)`**：如果当前引用和版本号分别等于 `expectedReference` 和 `expectedStamp`，则原子地更新为新的引用和新的版本号。
+
+使用示例：
+
+```java
+AtomicStampedReference<String> stampedRef = new AtomicStampedReference<>("Initial Value", 1);
+String ref = stampedRef.getReference();
+int stamp = stampedRef.getStamp();
+boolean success = stampedRef.compareAndSet("Initial Value", "Updated Value", 1, 2);
+```
+
+
 
 ## 5.4 原子数组
 
