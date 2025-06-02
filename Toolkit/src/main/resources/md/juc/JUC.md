@@ -2887,7 +2887,7 @@ Java共享模型中的无锁技术是指在多线程环境下，通过避免使�
 
 ## 5.1 CAS 和 volatile
 
-在Java中，CAS（Compare-And-Swap）是一种原子操作，常用于并发编程中。CAS操作用于在多线程环境下实现数据的同步，避免使用传统的锁机制（如`sychronized`关键字），从而提高性能。
+CAS（Compare-And-Swap）是一种原子操作，常用于并发编程中。CAS操作用于在多线程环境下实现数据的同步，避免使用传统的锁机制（如`sychronized`关键字），从而提高性能。
 
 
 
@@ -2971,7 +2971,7 @@ public class CounterWithoutCAS {
 
 
 
-**使用CAS对案例1进行改造，解决线程安全问题**
+**使用CAS对上述案例进行改造，解决线程安全问题**
 
 通过`AtomicInteger`类来改造这个案例。`AtomicInteger`类内部实现了CAS操作，能够保证对`count`的更新是线程安全的。
 
@@ -3022,7 +3022,7 @@ public class CounterWithCAS {
 
 
 
-前面看到的 AtomicInteger 的解决方法，内部并没有用锁来保护共享变量的线程安全。那么它是如何实现的呢？CAS 如何工作呢？
+查看 AtomicInteger 的源码，发现其内部并没有用锁来保护共享变量的线程安全。那么它是如何实现的呢？CAS 如何工作呢？
 
 1. CAS 是一种原子操作，它有三个操作数：
 
@@ -3040,7 +3040,7 @@ public class CounterWithCAS {
 
       
 
-CAS 保证了 **原子性**（硬件层面保证原子性：`lock cmpxchg` 指令），也就是说，在一个线程执行 CAS 操作时，其他线程不能干扰这个操作。因此，即使多个线程并发地更新同一个变量，CAS 也能确保只有一个线程的更新会成功，其它线程会重试，直到它们成功为止。
+CAS 保证了 **原子性**（硬件层面保证原子性：X86架构下的`lock cmpxchg` 指令：在多核状态下，某个核执行到带 lock 的指令时，CPU 会让总线锁住，当这个核把此指令执行完毕，再开启总线。这个过程中不会被线程的调度机制所打断，保证了多个线程对内存操作的准确性，是原子的。），也就是说，在一个线程执行 CAS 操作时，其他线程不能干扰这个操作。因此，即使多个线程并发地更新同一个变量，CAS 也能确保只有一个线程的更新会成功，其它线程会重试，直到它们成功为止。
 
 
 
@@ -3048,7 +3048,7 @@ CAS 保证了 **原子性**（硬件层面保证原子性：`lock cmpxchg` 指�
 
 
 
-CAS的操作流程可以参考这段代码
+CAS的操作思路可以参考这段代码
 
 ```java
 // 账户余额
@@ -3083,7 +3083,7 @@ while (true) {
 
 ## 5.2 原子整数
 
-Java 的原子引用类（`AtomicBoolean`, `AtomicInteger`, `AtomicLong`）提供了在并发环境下对基本数据类型（布尔值、整数、长整数）的线程安全操作。它们都位于 `java.util.concurrent.atomic` 包中，能够避免使用传统的锁机制（如 `synchronized` 或 `ReentrantLock`），提高并发性能。
+Java 的原子整数类（`AtomicBoolean`, `AtomicInteger`, `AtomicLong`）提供了在并发环境下对基本数据类型（布尔值、整数、长整数）的线程安全操作。它们都位于 `java.util.concurrent.atomic` 包中，能够避免使用传统的锁机制（如 `synchronized` 或 `ReentrantLock`），提高并发性能。
 
 
 
@@ -3181,11 +3181,76 @@ Java的原子引用（`AtomicReference`、`AtomicMarkableReference` 和 `AtomicS
 使用示例：
 
 ```java
-AtomicReference<String> ref = new AtomicReference<>("Initial Value");
-ref.set("Updated Value");
-String current = ref.get();
-boolean isUpdated = ref.compareAndSet("Updated Value", "New Value");
+public interface DecimalAccount {
+    // 获取余额
+    BigDecimal getBalance();
+    
+    // 取款
+    void withdraw(BigDecimal amount);
+
+    // 方法内会启动 1000 个线程，每个线程做 -10 元 的操作， 如果初始余额为 10000 那么正确的结果应当是 0
+    static void demo(DecimalAccount account) {
+        List<Thread> ts = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) {
+            ts.add(new Thread(() -> {
+                account.withdraw(BigDecimal.TEN);
+            }));
+        }
+        ts.forEach(Thread::start);
+        ts.forEach(t -> {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+        System.out.println(account.getBalance());
+    }
+}
+
+class DecimalAccountSafeCas implements DecimalAccount {
+    AtomicReference<BigDecimal> ref;
+
+    public DecimalAccountSafeCas(BigDecimal balance) {
+        ref = new AtomicReference<>(balance);
+    }
+
+    @Override
+    public BigDecimal getBalance() {
+        return ref.get();
+    }
+
+    @Override
+    public void withdraw(BigDecimal amount) {
+        while (true) {
+            BigDecimal prev = ref.get();
+            BigDecimal next = prev.subtract(amount);
+            if (ref.compareAndSet(prev, next)) {
+                break;
+            }
+        }
+    }
+    
+    public static void main(String[] args) {
+        // 输出：0 cost: 274 ms
+        DecimalAccount.demo(new DecimalAccountSafeCas(new BigDecimal("10000")));
+    }
+}
 ```
+
+
+
+注意 AtomicReference 存在 ABA 问题（这个问题对大部分业务没有影响）：
+
+- 假设线程 A 读取了一个共享变量的值，并准备进行修改。此时，线程 B 可能也在修改这个共享变量，并将其值恢复为最初的值。
+- 当线程 A 再次读取共享变量时，它可能无法检测到线程 B 对值的修改（因为值看起来没有变化），从而导致不正确的行为。
+
+
+
+使用 AtomicStampedReference 来解决 ABA 问题：
+
+- AtomicStampedReference 通过给每个值添加一个 时间戳（stamp） 来避免 ABA 问题。每次更新该值时，不仅会更新值本身，还会更新时间戳。
+- 在对 AtomicStampedReference 进行操作时，除了检查值本身的变化，还会检查时间戳的变化。这样，即使值恢复到了原来的状态，如果时间戳不同，仍然能检测到变化，避免了ABA问题。
 
 
 
@@ -3355,10 +3420,11 @@ class Person {
     volatile String name;
 }
 
-public class Updater {
+public class AtomicReferenceFieldUpdaterExample {
     public static void main(String[] args) {
         Person person = new Person();
-        Updater<Person, String> updater = Updater.newUpdater(Person.class, String.class, "name");
+        AtomicReferenceFieldUpdater<Person, String> updater = 
+            AtomicReferenceFieldUpdater.newUpdater(Person.class, String.class, "name");
 
         updater.set(person, "John");
         System.out.println(updater.get(person)); // 输出 John
@@ -3384,10 +3450,12 @@ class Counter {
     volatile int count;
 }
 
-public class Updater {
+public class AtomicIntegerFieldUpdaterExample {
     public static void main(String[] args) {
         Counter counter = new Counter();
-        Updater<Counter> updater = Updater.newUpdater(Counter.class, "count");
+        AtomicIntegerFieldUpdater<Counter> updater = 
+            AtomicIntegerFieldUpdater.newUpdater(Counter.class, "count");
+
         updater.incrementAndGet(counter);
         System.out.println(updater.get(counter)); // 输出 1
     }
@@ -3412,10 +3480,12 @@ class Timer {
     volatile long time;
 }
 
-public class Updater {
+public class AtomicLongFieldUpdaterExample {
     public static void main(String[] args) {
         Timer timer = new Timer();
-        Updater<Timer> updater = Updater.newUpdater(Timer.class, "time");
+        AtomicLongFieldUpdater<Timer> updater = 
+            AtomicLongFieldUpdater.newUpdater(Timer.class, "time");
+
         updater.addAndGet(timer, 10);
         System.out.println(updater.get(timer)); // 输出 10
     }
@@ -3426,13 +3496,173 @@ public class Updater {
 
 ## 5.6 原子累加器
 
+`LongAdder` 和 `DoubleAdder` 是 Java 中的并发工具类，用于在多线程环境下进行原子性累加操作。它们属于 `java.util.concurrent.atomic` 包，并且比传统的 `AtomicLong` 和 `AtomicDouble` 更适用于高并发场景。
+
+
+
+### 5.6.1 LongAdder
+
+`LongAdder` 是一个线程安全的原子累加器，适用于多个线程同时对一个变量进行加法操作的场景。它通过将数据分散到多个内部计数器中，从而减少了锁竞争，提高了性能。每个线程在累加时操作的是局部的计数器，最终会定期合并成一个全局的计数器值。
+
+**使用场景**：
+
+- 当有大量线程需要对一个单一变量进行累加时，`LongAdder` 会比 `AtomicLong` 性能更好，尤其在高并发环境下。
+
+**示例代码**：
+
+```java
+public class LongAdderExample {
+    public static void main(String[] args) throws InterruptedException {
+        LongAdder adder = new LongAdder();
+        
+        // 启动多个线程进行累加
+        Runnable task = () -> {
+            for (int i = 0; i < 1000; i++) {
+                adder.increment();
+            }
+        };
+
+        Thread thread1 = new Thread(task);
+        Thread thread2 = new Thread(task);
+        thread1.start();
+        thread2.start();
+
+        thread1.join();
+        thread2.join();
+
+        // 输出累加结果
+        System.out.println("Final value: " + adder.sum());
+    }
+}
+```
+
+### 5.6.2 **DoubleAdder**
+`DoubleAdder` 类似于 `LongAdder`，但是用于 `double` 类型的原子累加。它也采用了分散的计数器结构，从而在高并发时提高性能，减少线程之间的竞争。
+
+**使用场景**：
+
+- 如果要在多线程环境下对 `double` 类型的变量进行原子累加操作，`DoubleAdder` 是一个比 `AtomicDouble` 更高效的选择。
+
+**示例代码**：
+
+```java
+public class DoubleAdderExample {
+    public static void main(String[] args) throws InterruptedException {
+        DoubleAdder adder = new DoubleAdder();
+        
+        // 启动多个线程进行累加
+        Runnable task = () -> {
+            for (int i = 0; i < 1000; i++) {
+                adder.add(1.0);
+            }
+        };
+
+        Thread thread1 = new Thread(task);
+        Thread thread2 = new Thread(task);
+        thread1.start();
+        thread2.start();
+
+        thread1.join();
+        thread2.join();
+
+        // 输出累加结果
+        System.out.println("Final value: " + adder.sum());
+    }
+}
+```
+
+
+
+### 5.6.3 LongAdder & AtomicLong
+
+为什么使用 `LongAdder` 和 `DoubleAdder` 而不是 `AtomicLong` 和 `AtomicDouble`？
+
+- **性能优势**：`AtomicLong` 和 `AtomicDouble` 采用的是单一的变量进行操作，每次修改都会导致锁竞争，而 `LongAdder` 和 `DoubleAdder` 通过内部多个计数器并行工作，减少了线程之间的竞争，从而提升了性能。
+- **高并发场景**：在高并发下，如果有很多线程同时对一个变量进行修改，`LongAdder` 和 `DoubleAdder` 提供了更好的吞吐量和响应时间。
+
+总的来说，当面对高并发的累加操作时，`LongAdder` 和 `DoubleAdder` 是更合适的选择，能够有效提高性能并减少锁竞争。
+
 
 
 ## 5.7 Unsafe
 
+`Unsafe` 类是 Java 中提供的一个非常强大的类，它允许直接操作内存和执行一些高性能的操作，比如原子性操作（CAS）。`Unsafe` 类位于 `sun.misc` 包中，通常用于高效的并发编程和低级别的内存管理。它提供了一些原子操作方法，例如 `compareAndSwap`（CAS）操作。
+
+
+
+**常用方法：**
+
+**`compareAndSwapInt`**：用于比较并交换一个对象的 `int` 类型字段的值。
+
+```java
+public native boolean compareAndSwapInt(Object o, long offset, int expected, int update);
+```
+**`compareAndSwapObject`**：用于比较并交换一个对象的引用类型字段的值。
+
+```java
+public native boolean compareAndSwapObject(Object o, long offset, Object expected, Object update);
+```
+
+
+**使用示例**
+
+```java
+public class UnsafeCASExample {
+    private static final Unsafe unsafe;
+    private static final long valueOffset;
+    private volatile int value = 0;
+
+    static {
+        try {
+            // 获取 Unsafe 实例
+            Field field = Unsafe.class.getDeclaredField("theUnsafe");
+            field.setAccessible(true);
+            unsafe = (Unsafe) field.get(null);
+            // 获取 value 字段的内存偏移量
+            valueOffset = unsafe.objectFieldOffset(UnsafeCASExample.class.getDeclaredField("value"));
+        } catch (Exception e) {
+            throw new Error(e);
+        }
+    }
+
+    public boolean compareAndSwap(int expected, int newValue) {
+        return unsafe.compareAndSwapInt(this, valueOffset, expected, newValue);
+    }
+
+    public static void main(String[] args) {
+        UnsafeCASExample example = new UnsafeCASExample();
+        
+        // 线程 1
+        new Thread(() -> {
+            boolean result = example.compareAndSwap(0, 10);
+            System.out.println("Thread 1 CAS result: " + result + " new value: " + example.value);
+        }).start();
+
+        // 线程 2
+        new Thread(() -> {
+            boolean result = example.compareAndSwap(0, 20);
+            System.out.println("Thread 2 CAS result: " + result + " new value: " + example.value);
+        }).start();
+    }
+}
+```
+
+
+
+**示例输出：**
+
+```
+Thread 1 CAS result: true new value: 10
+Thread 2 CAS result: false new value: 10
+```
+
 
 
 # 6、共享模型之不可变
+
+
+
+
 
 
 
