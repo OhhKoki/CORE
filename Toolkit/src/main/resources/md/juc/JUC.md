@@ -3660,9 +3660,155 @@ Thread 2 CAS result: false new value: 10
 
 # 6、共享模型之不可变
 
+不可变通常指的是模型在其生命周期内不允许被修改或更新（参考 String 类的设计）。具体来说，在这种模型中，一旦模型创建并投入使用，模型的结构、参数等都不能被更改。这种不可变性使得共享模型在多个用户或系统间共享时，能够保证一致性和稳定性。
 
 
 
+## 6.1 不可变类设计
+
+在 Java 中设计不可变类（Immutable Class）是一种常见的设计模式，它使得对象一旦创建后就不能被修改。这种设计通常有助于提高线程安全性并防止错误的修改。
+
+
+
+要设计一个不可变类，需要遵循以下几个关键原则：
+
+
+
+**1、将类声明为 `final`**：这样可以防止类被继承，因为继承可能会改变类的不可变特性。
+
+```java
+public final class ImmutableClass {
+    // 类体
+}
+```
+
+
+
+**2、所有字段声明为 `final` 和 `private`**：`final` 确保字段的值一旦被赋值后就不能更改。`private` 确保字段不能被外部直接访问。
+
+```java
+public final class ImmutableClass {
+    private final String name;
+    private final int age;
+    
+    // 构造方法和其它代码
+}
+```
+
+
+
+**3、没有提供 `setter` 方法**：不提供 setter 方法意味着外部不能直接修改字段的值。
+
+```java
+public final class ImmutableClass {
+    private final String name;
+    private final int age;
+    
+    // 构造方法
+    public ImmutableClass(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+    
+    // getter 方法
+    public String getName() {
+        return name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+}
+```
+
+
+
+**4、确保字段的深拷贝（如果需要）**：如果字段是引用类型（如数组或集合），则应在构造方法中对它们进行深拷贝。这样即使外部修改了传入的对象，也不会影响到不可变类的字段。
+
+```java
+public final class ImmutableClass {
+    private final Date birthDate;
+
+    public ImmutableClass(Date birthDate) {
+        // 创建 birthDate 的深拷贝
+        this.birthDate = new Date(birthDate.getTime());
+    }
+
+    public Date getBirthDate() {
+        // 返回 birthDate 的拷贝
+        return new Date(birthDate.getTime());
+    }
+}
+```
+
+
+
+**5、构造方法初始化所有字段**：所有字段必须通过构造方法来初始化，并且初始化后不能被更改。
+
+```java
+public final class ImmutableClass {
+    private final String name;
+    private final int age;
+
+    public ImmutableClass(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    public int getAge() {
+        return age;
+    }
+}
+```
+
+
+
+通过这种设计，我们可以确保不可变类的对象在创建后就保持不变，从而避免了在多线程环境下出现修改对象状态的错误。一个典型的不可变类设计遵循以下原则：
+
+- 使用 final 类和字段；
+- 提供只有 getter 方法，没有 setter 方法；
+- 确保字段的深拷贝（尤其是引用类型）；
+- 确保类初始化后不能改变对象的状态。
+
+
+
+## 6.2 无状态类设计
+
+无状态类（Stateless Class）是指那些不依赖于实例变量（也就是不依赖类的成员属性）的类。换句话说，这些类的行为不受类实例状态的影响，它们的每个方法调用只依赖于方法传入的参数，而不会使用或修改类中的实例变量。
+
+
+
+**无状态类的特点：**
+
+1. **没有实例变量**：无状态类不保存任何实例变量或成员属性，所有的状态都通过方法的输入参数传递。
+2. **方法无副作用**：无状态类中的方法通常不修改类的任何实例状态，执行的结果完全由输入参数决定。
+3. **多线程下安全**：由于没有实例变量，不同的线程可以并发调用无状态类的不同实例方法而不会产生冲突，它们通常是线程安全的。
+4. **较简洁的设计**：无状态类通常设计得非常简洁，只提供某些特定的功能，而不维护任何长久的对象状态。
+
+
+
+例如，下面是一个简单的无状态类，它提供数学计算功能：
+
+```java
+public class MathUtils {
+
+    // 无状态的加法方法
+    public static int add(int a, int b) {
+        return a + b; // 结果仅由参数 a 和 b 决定
+    }
+
+    // 无状态的减法方法
+    public static int subtract(int a, int b) {
+        return a - b; // 结果仅由参数 a 和 b 决定
+    }
+}
+```
+
+在这个例子中，MathUtils 类是一个无状态类。它的所有方法都不依赖于类的实例变量（成员属性），而是通过方法参数来计算结果。因此，它们是完全无状态的。
 
 
 
