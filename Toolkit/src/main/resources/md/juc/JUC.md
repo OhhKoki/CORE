@@ -3814,10 +3814,481 @@ public class MathUtils {
 
 # 7、共享模型之工具
 
+共享模型工具通常指的是一些用于管理和操作共享资源的工具和技术，它们帮助程序在多线程或并发环境中高效地共享数据和资源。比如：线程池，并发集合类等等。
+
 
 
 ## 7.1 线程池
 
+Java的线程池通过`Executor`框架管理线程，允许复用已有的线程来执行多个任务，从而提高程序的性能和资源利用效率。
+
+
+
+### 7.1.1 自定义线程池
+
+自定义一个线程池，用于学习
+
+![image](./assets/picture28.png)
+
+代码如下
+
+```java
+@Slf4j(topic = "c.Test18")
+public class Test18 {
+    public static void main(String[] args) {
+        ThreadPool threadPool = new ThreadPool(1,
+                1000, TimeUnit.MILLISECONDS, 1, (queue, task) -> {
+            // 1. 死等
+            // queue.put(task);
+            // 2) 带超时等待
+            // queue.offer(task, 1500, TimeUnit.MILLISECONDS);
+            // 3) 让调用者放弃任务执行
+            // log.debug("放弃{}", task);
+            // 4) 让调用者抛出异常
+            // throw new RuntimeException("任务执行失败 " + task);
+            // 5) 让调用者自己执行任务
+            task.run();
+        });
+        for (int i = 0; i < 4; i++) {
+            int j = i;
+            threadPool.execute(() -> {
+                try {
+                    Thread.sleep(1000L);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                log.debug("{}", j);
+            });
+        }
+    }
+}
+
+@FunctionalInterface // 拒绝策略
+interface RejectPolicy<T> {
+    void reject(BlockingQueue<T> queue, T task);
+}
+
+@Slf4j(topic = "c.BlockingQueue")
+class BlockingQueue<T> {
+    // 1. 任务队列
+    private Deque<T> queue = new ArrayDeque<>();
+    // 2. 锁
+    private ReentrantLock lock = new ReentrantLock();
+    // 3. 生产者条件变量
+    private Condition fullWaitSet = lock.newCondition();
+    // 4. 消费者条件变量
+    private Condition emptyWaitSet = lock.newCondition();
+    // 5. 容量
+    private int capcity;
+
+    public BlockingQueue(int capcity) {
+        this.capcity = capcity;
+    }
+
+    // 带超时阻塞获取
+    public T poll(long timeout, TimeUnit unit) {
+        lock.lock();
+        try {
+            // 将 timeout 统一转换为 纳秒
+            long nanos = unit.toNanos(timeout);
+            while (queue.isEmpty()) {
+                try {
+                    // 返回值是剩余时间
+                    if (nanos <= 0) {
+                        return null;
+                    }
+                    nanos = emptyWaitSet.awaitNanos(nanos);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            T t = queue.removeFirst();
+            fullWaitSet.signal();
+            return t;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    // 阻塞获取
+    public T take() {
+        lock.lock();
+        try {
+            while (queue.isEmpty()) {
+                try {
+                    emptyWaitSet.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            T t = queue.removeFirst();
+            fullWaitSet.signal();
+            return t;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    // 阻塞添加
+    public void put(T task) {
+        lock.lock();
+        try {
+            while (queue.size() == capcity) {
+                try {
+                    log.debug("等待加入任务队列 {} ...", task);
+                    fullWaitSet.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            log.debug("加入任务队列 {}", task);
+            queue.addLast(task);
+            emptyWaitSet.signal();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    // 带超时时间阻塞添加
+    public boolean offer(T task, long timeout, TimeUnit timeUnit) {
+        lock.lock();
+        try {
+            long nanos = timeUnit.toNanos(timeout);
+            while (queue.size() == capcity) {
+                try {
+                    if (nanos <= 0) {
+                        return false;
+                    }
+                    log.debug("等待加入任务队列 {} ...", task);
+                    nanos = fullWaitSet.awaitNanos(nanos);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            log.debug("加入任务队列 {}", task);
+            queue.addLast(task);
+            emptyWaitSet.signal();
+            return true;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public int size() {
+        lock.lock();
+        try {
+            return queue.size();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void tryPut(RejectPolicy<T> rejectPolicy, T task) {
+        lock.lock();
+        try {
+            // 判断队列是否满
+            if (queue.size() == capcity) {
+                rejectPolicy.reject(this, task);
+            } else { // 有空闲
+                log.debug("加入任务队列 {}", task);
+                queue.addLast(task);
+                emptyWaitSet.signal();
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+}
+
+@Slf4j(topic = "c.ThreadPool")
+class ThreadPool {
+    // 任务队列
+    private BlockingQueue<Runnable> taskQueue;
+    // 线程集合
+    private HashSet<Worker> workers = new HashSet<>();
+    // 核心线程数
+    private int coreSize;
+    // 获取任务时的超时时间
+    private long timeout;
+    private TimeUnit timeUnit;
+    private RejectPolicy<Runnable> rejectPolicy;
+
+    // 执行任务
+    public void execute(Runnable task) {
+        // 当任务数没有超过 coreSize 时，直接交给 worker 对象执行
+        // 如果任务数超过 coreSize 时，加入任务队列暂存
+        synchronized (workers) {
+            if (workers.size() < coreSize) {
+                Worker worker = new Worker(task);
+                log.debug("新增 worker{}, {}", worker, task);
+                workers.add(worker);
+                worker.start();
+            } else {
+                // taskQueue.put(task);
+                // 1) 死等
+                // 2) 带超时等待
+                // 3) 让调用者放弃任务执行
+                // 4) 让调用者抛出异常
+                // 5) 让调用者自己执行任务
+                taskQueue.tryPut(rejectPolicy, task);
+            }
+        }
+    }
+
+    public ThreadPool(int coreSize, long timeout, TimeUnit timeUnit, int queueCapcity,
+                      RejectPolicy<Runnable> rejectPolicy) {
+        this.coreSize = coreSize;
+        this.timeout = timeout;
+        this.timeUnit = timeUnit;
+        this.taskQueue = new BlockingQueue<>(queueCapcity);
+        this.rejectPolicy = rejectPolicy;
+    }
+
+    class Worker extends Thread {
+        private Runnable task;
+
+        public Worker(Runnable task) {
+            this.task = task;
+        }
+
+        @Override
+        public void run() {
+            // 执行任务
+            // 1) 当 task 不为空，执行任务
+            // 2) 当 task 执行完毕，再接着从任务队列获取任务并执行
+            // while(task != null || (task = taskQueue.take()) != null) {
+            while (task != null || (task = taskQueue.poll(timeout, timeUnit)) != null) {
+                try {
+                    log.debug("正在执行...{}", task);
+                    task.run();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    task = null;
+                }
+            }
+            synchronized (workers) {
+                log.debug("worker 被移除{}", this);
+                workers.remove(this);
+            }
+        }
+    }
+}
+```
+
+
+
+### 7.1.2 Executor
+
+Java的线程池（`Executor`）是通过预先创建一组线程来管理和调度任务的技术，从而避免了频繁创建和销毁线程的开销。线程池的使用有助于提高性能和资源利用率。
+
+![image](./assets/picture29.png)
+
+#### 1. **核心接口**
+   - **`Executor`**: 定义了执行任务的方法，但不关心线程的管理。
+
+   - **`ExecutorService`**: 扩展了`Executor`，增加了关闭线程池、提交返回结果等方法。
+
+   - **`ScheduledExecutorService`**: 扩展了`ExecutorService`，支持定时任务调度。
+
+     
+
+#### 2. **线程池的实现类**
+   - **`ThreadPoolExecutor`**: 最常用的线程池实现类，提供了更详细的配置选项。
+
+   - **`ScheduledThreadPoolExecutor`**: 允许执行延迟任务和定时任务的线程池。
+
+     
+
+#### 3. **线程池的核心参数**
+   - **核心线程数（`corePoolSize`）**: 保持活动的线程数，默认情况下，如果线程数少于核心线程数，即使空闲，也不会被回收。
+   - **最大线程数（`maximumPoolSize`）**: 线程池允许的最大线程数。
+   - **空闲线程的存活时间（`keepAliveTime`）**: 空闲线程在被销毁之前的最大存活时间（针对救急线程）。
+   - **时间单位（`unit`）**: 指定时间单位（针对救急线程）。
+   - **任务队列（`BlockingQueue`）**: 用于存放待执行任务的队列。常见的队列有`LinkedBlockingQueue`、`ArrayBlockingQueue`、`SynchronousQueue`等。
+   - **线程工厂（`ThreadFactory`）**: 用于创建新线程的工厂（主要用于指定线程的名字）。
+   - **拒绝策略（`RejectedExecutionHandler`）**: 当线程池无法处理更多的任务时，选择如何处理任务。常见的拒绝策略有：`AbortPolicy`（默认，抛出异常）、`CallerRunsPolicy`（调用者执行任务）、`DiscardPolicy`（丢弃任务）等。
+   - 
+
+#### 4. **线程池的工作流程**
+   1. 当提交任务时，如果当前活跃线程数小于核心线程数，会立即创建一个新线程执行任务。
+
+   2. 如果核心线程数已满，则任务会被提交到任务队列中等待。
+
+   3. 如果任务队列已满且活跃线程数还未达到最大线程数时，线程池会创建更多的线程（救急线程）来执行任务。
+
+   4. 如果线程池的线程数达到最大线程数，并且任务队列已满，线程池会根据拒绝策略处理超出的任务。
+
+      
+
+#### 5. **常用的线程池工厂方法**
+
+   - **`Executors.newFixedThreadPool(int nThreads)`**: 创建固定大小的线程池。
+   - **`Executors.newCachedThreadPool()`**: 创建一个可缓存的线程池，线程池的线程数会根据需求增长，空闲线程会被回收。
+   - **`Executors.newSingleThreadExecutor()`**: 创建一个只有单个线程的线程池，适用于只需要一个线程的任务。
+
+
+
+#### 6. **线程池的优缺点**
+   - **优点**：
+     - 提高了线程的复用率，减少了频繁创建和销毁线程的开销。
+     - 提供了对线程池大小的管理，避免了系统资源的过度消耗。
+     - 通过拒绝策略，可以灵活应对高负载情况。
+     
+   - **缺点**：
+     - 如果配置不当（比如线程数设置过大或队列设置不当），可能导致资源浪费或者拒绝任务的情况。
+     
+     - 对于非常短的小任务，可能反而引入额外的性能开销。
+     
+       
+
+#### 7. **关闭线程池**
+   - **`shutdown()`**: 启动线程池的关闭过程，线程池不再接收新任务，已提交任务会继续执行。
+
+   - **`shutdownNow()`**: 尝试停止所有正在执行的任务，并返回尚未执行的任务列表。
+
+     
+
+#### 8. **适用场景**
+   - 适用于高并发场景，如任务量大且需要并发执行的程序（例如Web服务器）。
+   - 适用于定时任务调度，利用`ScheduledExecutorService`来管理定时任务。
+
+
+
+### 7.1.3 Fork/Join
+
+Java 的 Fork/Join 框架是一个用于并行计算的框架，它在Java 7中引入，属于`java.util.concurrent`包的一部分。该框架主要通过将任务分解成更小的子任务来提升并发性能，特别适合处理计算密集型的任务。它的核心思想是**分治法**（Divide and Conquer），将一个大任务分成多个小任务并行处理，然后合并结果。
+
+
+
+#### 1. Fork/Join框架的核心组件
+   - **ForkJoinPool**：这是Fork/Join框架的核心，管理线程池并调度任务的执行。它实现了`ExecutorService`接口，可以通过`ForkJoinPool.commonPool()`获取默认的公共池，或者使用`new ForkJoinPool()`来创建一个自定义的线程池。
+
+   - **ForkJoinTask**：任务须是`ForkJoinTask`的子类，常用的是`RecursiveTask`和`RecursiveAction`。
+     
+     - **RecursiveTask**：有返回值的任务，当子任务完成时，可以返回结果。
+     
+     - **RecursiveAction**：没有返回值的任务，适用于不需要返回计算结果的情况。
+     
+       
+
+#### 2. Fork/Join框架的工作原理
+   - **Fork**：任务被分解成多个子任务，这些子任务会递归地调用`fork()`方法提交给线程池执行。
+
+   - **Join**：主任务等待子任务完成，并获取子任务的结果。通过调用`join()`方法等待每个子任务完成，并合并其结果。
+
+     
+
+#### 3. Fork/Join的使用步骤
+   - 定义一个继承`RecursiveTask`（或`RecursiveAction`）的类，重写`compute()`方法，完成分解子任务和合并结果的逻辑。
+
+   - 使用`ForkJoinPool`来执行任务。
+
+     
+
+#### 4. 代码示例
+```java
+import java.util.concurrent.RecursiveTask;
+import java.util.concurrent.ForkJoinPool;
+
+public class ForkJoinExample extends RecursiveTask<Long> {
+    private final long start;
+    private final long end;
+
+    public ForkJoinExample(long start, long end) {
+        this.start = start;
+        this.end = end;
+    }
+
+    @Override
+    protected Long compute() {
+        if (end - start <= 10) {  // 临界值，任务较小时直接计算
+            long sum = 0;
+            for (long i = start; i <= end; i++) {
+                sum += i;
+            }
+            return sum;
+        } else {
+            long middle = (start + end) / 2;
+            ForkJoinExample task1 = new ForkJoinExample(start, middle);
+            ForkJoinExample task2 = new ForkJoinExample(middle + 1, end);
+            task1.fork();  // 将任务异步提交
+            task2.fork();
+            long result1 = task1.join();  // 等待任务1完成并返回结果
+            long result2 = task2.join();  // 等待任务2完成并返回结果
+            return result1 + result2;
+        }
+    }
+
+    public static void main(String[] args) {
+        ForkJoinPool pool = new ForkJoinPool();
+        ForkJoinExample task = new ForkJoinExample(1, 100);
+        long result = pool.invoke(task);  // 提交任务并获取结果
+        System.out.println("Sum: " + result);
+    }
+}
+```
+
+
+
+#### 5. Fork/Join的优势
+
+   - **效率**：可以通过将大任务拆分为小任务并行处理，提高CPU的利用率。
+   - **自适应任务分配**：Fork/Join框架会根据系统的负载自动调整任务的执行策略，避免任务过多导致的线程竞争。
+   - **简化并行编程**：不需要显式地管理线程池或锁等低级并发控制，可以通过`fork()`和`join()`操作来处理复杂的并行任务。
+
+
+
+#### 6. 应用场景
+
+   - 大规模数据处理（如归并排序、快速排序、数值计算等）。
+   - 适合计算密集型任务，不适合I/O密集型任务。
+
 
 
 ## 7.2 JUC
+
+`java.util.concurrent`（简称 `j.u.c`）包提供了一组并发工具类，旨在简化多线程编程，支持线程池、锁、并发集合等常用功能，提高并发编程的效率与安全性。
+
+
+
+### 7.2.1 AQS
+
+AQS（Abstract Queue Synchronizer）是Java中一个用于构建锁和同步器的抽象类，属于`java.util.concurrent`包。它为多线程并发控制提供了一个基础框架，能够管理线程的排队、挂起和恢复。AQS的设计理念是通过状态值来控制线程的同步操作。
+
+
+
+**主要特点**
+
+1. **队列机制**：AQS基于队列来管理线程的状态。它将等待获取锁的线程排队，当锁释放时，队列中的线程可以被唤醒并获取锁。
+
+2. **状态管理**：AQS使用一个整数状态值来表示同步器的状态。这个状态值可以表示锁的拥有者、线程的等待状态等。
+
+3. **模板方法**：AQS提供了一些抽象方法，如`tryAcquire()`、`tryRelease()`等，子类通过实现这些方法来定义具体的锁行为。
+
+4. **可扩展性**：AQS本身并不是一个具体的锁，它是一个框架，允许子类根据需要实现具体的同步器，如`ReentrantLock`、`CountDownLatch`、`Semaphore`等。
+
+   
+
+**AQS常见方法**
+
+- `acquire(int arg)`：获取锁，成功时返回，失败时将线程加入到等待队列。
+
+- `release(int arg)`：释放锁，成功时通知其他等待线程。
+
+- `tryAcquire(int arg)`：尝试获取锁，如果成功则返回。
+
+- `tryRelease(int arg)`：尝试释放锁，如果成功则返回。
+
+- `isHeldExclusively()`：查询锁是否被当前线程独占。
+
+  
+
+**应用场景：**AQS广泛用于实现各种同步器，比如：
+
+- **ReentrantLock**：可重入锁
+- **CountDownLatch**：倒计时锁
+- **Semaphore**：信号量
+
+
+
