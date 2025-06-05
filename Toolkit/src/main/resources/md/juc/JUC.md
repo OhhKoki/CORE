@@ -4270,21 +4270,114 @@ AQS（Abstract Queue Synchronizer）是Java中一个用于构建锁和同步器�
 
    
 
-**AQS常见方法**
+**常见方法**
 
 - `acquire(int arg)`：获取锁，成功时返回，失败时将线程加入到等待队列。
-
 - `release(int arg)`：释放锁，成功时通知其他等待线程。
-
 - `tryAcquire(int arg)`：尝试获取锁，如果成功则返回。
-
 - `tryRelease(int arg)`：尝试释放锁，如果成功则返回。
-
 - `isHeldExclusively()`：查询锁是否被当前线程独占。
 
-  
 
-**应用场景：**AQS广泛用于实现各种同步器，比如：
+
+自定义一个不可重入锁
+
+```java
+import java.util.concurrent.locks.AbstractQueuedSynchronizer;
+
+class NonReentrantLock {
+    private static class Sync extends AbstractQueuedSynchronizer {
+        // 锁定状态
+        @Override
+        protected boolean tryAcquire(int acquires) {
+            Thread currentThread = Thread.currentThread();
+            // 如果当前线程已经持有锁，则返回false（不可重入）
+            if (getState() == 0) {
+                if (compareAndSetState(0, 1)) {
+                    setExclusiveOwnerThread(currentThread);
+                    return true;
+                }
+            } else if (getExclusiveOwnerThread() == currentThread) {
+                // 如果当前线程已经持有锁，返回false，禁止重入
+                return false;
+            }
+            return false;
+        }
+
+        @Override
+        protected boolean tryRelease(int releases) {
+            // 释放锁时，设置状态为0
+            if (getState() == 0) {
+                throw new IllegalMonitorStateException();
+            }
+            setExclusiveOwnerThread(null);
+            setState(0);
+            return true;
+        }
+
+        @Override
+        protected boolean isHeldExclusively() {
+            // 只允许一个线程持有锁
+            return getState() == 1;
+        }
+    }
+
+    private final Sync sync = new Sync();
+
+    public void lock() {
+        sync.acquire(1);
+    }
+
+    public void unlock() {
+        sync.release(1);
+    }
+
+    public boolean tryLock() {
+        return sync.tryAcquire(1);
+    }
+
+    public boolean isLocked() {
+        return sync.isHeldExclusively();
+    }
+}
+
+public class Test {
+    public static void main(String[] args) {
+        NonReentrantLock lock = new NonReentrantLock();
+        
+        // 一个线程尝试加锁
+        Thread t1 = new Thread(() -> {
+            lock.lock();
+            System.out.println("Thread 1 acquired the lock");
+            try {
+                // 在这里模拟线程的工作
+            } finally {
+                lock.unlock();
+            }
+        });
+
+        // 另一个线程尝试加锁
+        Thread t2 = new Thread(() -> {
+            lock.lock();
+            System.out.println("Thread 2 acquired the lock");
+            try {
+                // 在这里模拟线程的工作
+            } finally {
+                lock.unlock();
+            }
+        });
+
+        t1.start();
+        t2.start();
+    }
+}
+```
+
+
+
+
+
+**应用场景：**AQS广泛用于实现各种同步器
 
 - **ReentrantLock**：可重入锁
 - **CountDownLatch**：倒计时锁
@@ -4292,3 +4385,192 @@ AQS（Abstract Queue Synchronizer）是Java中一个用于构建锁和同步器�
 
 
 
+### 7.2.2 Semaphore
+
+在Java中，`Semaphore`是`java.util.concurrent`包中的一个类，它实现了信号量机制，用于控制对共享资源的访问。`Semaphore`通过维持一个许可计数来限制同时访问某个特定资源的线程数量，确保多线程环境下的并发控制。
+
+
+
+**主要特点**
+
+1. **许可数**：`Semaphore`内部有一个许可计数（`permits`），它决定了最多有多少个线程可以同时访问共享资源。
+
+2. **阻塞和唤醒机制**：当许可数为0时，尝试获取许可的线程会被阻塞。获取到许可后，许可数减少，线程可以执行资源访问任务；执行完成后，线程释放许可，许可数增加，其他阻塞线程可以被唤醒。
+
+3. **公平性**：`Semaphore`支持公平性，表示线程可以按请求的顺序获取许可。公平性可以通过构造函数来指定。
+
+   
+
+**常见方法**
+
+- **`acquire()`**：请求一个许可，如果没有可用许可，线程将被阻塞，直到获得许可。
+
+- **`acquire(int permits)`**：请求多个许可，如果许可不足，线程将被阻塞，直到获得足够的许可。
+
+- **`release()`**：释放一个许可，将许可数加1，并唤醒一个等待的线程（如果有的话）。
+
+- **`release(int permits)`**：释放多个许可，将许可数增加指定数量，并唤醒相应数量的等待线程。
+
+- **`availablePermits()`**：返回当前可用的许可数。
+
+- **`hasQueuedThreads()`**：判断是否有线程在等待获取许可。
+
+- **`tryAcquire()`**：尝试获取许可，如果成功获取则返回`true`，否则返回`false`，不会阻塞当前线程。
+
+- **`tryAcquire(long timeout, TimeUnit unit)`**：尝试获取许可，在指定的时间内，如果成功获取许可则返回`true`，超时则返回`false`，不会一直阻塞。
+
+  
+
+**示例代码**
+
+```java
+import java.util.concurrent.Semaphore;
+
+public class SemaphoreExample {
+    public static void main(String[] args) {
+        // 创建一个信号量，初始许可数为3
+        Semaphore semaphore = new Semaphore(3);
+
+        // 创建多个线程，模拟多个线程访问共享资源
+        for (int i = 0; i < 5; i++) {
+            new Thread(new Worker(semaphore)).start();
+        }
+    }
+}
+
+class Worker implements Runnable {
+    private Semaphore semaphore;
+
+    public Worker(Semaphore semaphore) {
+        this.semaphore = semaphore;
+    }
+
+    @Override
+    public void run() {
+        try {
+            // 获取许可
+            semaphore.acquire();
+            System.out.println(Thread.currentThread().getName() + " is working.");
+
+            // 模拟工作
+            Thread.sleep(2000);
+
+            System.out.println(Thread.currentThread().getName() + " finished working.");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            // 释放许可
+            semaphore.release();
+        }
+    }
+}
+```
+
+
+
+**注意事项**
+
+1. **公平性**：`Semaphore`的公平性是通过传入`true`来保证的，表示线程按请求顺序获取许可（即FIFO）。默认是非公平的。
+2. **死锁避免**：使用信号量时需要小心避免死锁，因为线程可能因无法获取到许可而被阻塞。
+
+
+
+**简要总结**
+
+Java中的`Semaphore`是一种有效的并发控制工具，适用于限制访问共享资源的线程数量，常用于实现资源池等场景。它通过许可机制帮助管理资源访问，避免过度竞争和资源耗尽。
+
+
+
+### 7.2.3 CountDownLatch
+
+`CountDownLatch` 是 Java 并发编程中的一个同步工具类，位于 `java.util.concurrent` 包中。它允许一个或多个线程等待，直到其他线程完成操作。`CountDownLatch` 通常用于实现某些任务必须在其他任务完成后才能继续执行的场景。
+
+
+
+**主要特点：**
+
+1. **计数器机制**：`CountDownLatch` 维护一个计数器，初始值为 `count`，每当一个线程调用 `countDown()` 方法时，计数器减一。
+
+2. **等待机制**：通过 `await()` 方法，线程可以在 `CountDownLatch` 上等待，直到计数器减到零为止。
+
+3. **线程同步**：当所有线程都调用 `countDown()` 并且计数器为零时，所有调用了 `await()` 的线程才会继续执行。
+
+   
+
+**主要方法：**
+
+- **`CountDownLatch(int count)`**：构造方法，传入计数器的初始值 `count`。
+
+- **`void await()`**：使当前线程等待，直到计数器为零。如果计数器已经为零，则立即返回。
+
+- **`boolean await(long timeout, TimeUnit unit)`**：带超时限制的 `await` 方法，在指定时间内等待。
+
+- **`void countDown()`**：将计数器减一。如果计数器为零，则所有在 `await()` 上等待的线程将被唤醒。
+
+- **`long getCount()`**：返回当前的计数器值。
+
+  
+
+**使用场景：**
+
+- **多线程并行执行任务**：在并发程序中，某些任务需要等待其他任务完成后再开始。例如，启动多个线程去执行任务，所有任务完成后才能继续执行下一步操作。
+
+- **主线程等待所有子线程执行完毕**：主线程可以通过 `await()` 等待所有工作线程的完成。
+
+  
+
+**示例代码：**
+
+```java
+import java.util.concurrent.CountDownLatch;
+
+/**
+ * 1. 主线程通过调用 latch.await() 来等待所有子线程完成，子线程在执行完各自的任务后调用 latch.countDown()。
+ * 2. 当 countDown() 被调用三次后，计数器变为零，主线程才能继续执行，输出 All workers have finished their tasks.
+ *
+/
+public class CountDownLatchExample {
+    public static void main(String[] args) throws InterruptedException {
+        // 创建一个计数器为3的 CountDownLatch
+        CountDownLatch latch = new CountDownLatch(3);
+        
+        // 启动3个线程
+        for (int i = 0; i < 3; i++) {
+            new Thread(new Worker(latch)).start();
+        }
+        
+        // 主线程等待，直到计数器为0
+        latch.await();
+        System.out.println("All workers have finished their tasks.");
+    }
+}
+
+class Worker implements Runnable {
+    private final CountDownLatch latch;
+    
+    public Worker(CountDownLatch latch) {
+        this.latch = latch;
+    }
+
+    @Override
+    public void run() {
+        try {
+            // 模拟工作
+            Thread.sleep(1000);
+            System.out.println(Thread.currentThread().getName() + " has finished work.");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            // 每个线程完成任务后调用 countDown() 方法
+            latch.countDown();
+        }
+    }
+}
+```
+
+
+
+**注意事项：**
+
+- `CountDownLatch` 一旦计数器达到零，不能重置。如果需要重置计数器，应该考虑使用 `CyclicBarrier` 或其他工具类。
+- `CountDownLatch` 适用于一次性的任务同步，不能重复使用。
