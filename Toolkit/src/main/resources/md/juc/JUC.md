@@ -612,7 +612,7 @@ log.debug("主线程执行结束");
 
 ## 3.2 共享问题
 
-共享问题指的是多个线程在并发执行时，访问和修改同一共享资源时可能出现的数据不一致或竞态条件问题。
+共享问题指的是多个线程在并发执行时，访问和修改同一共享资源时可能出现的数据不一致（即：竞态条件）。
 
 
 
@@ -660,8 +660,8 @@ public class Test05 {
 
 ```java
 - getstatic      i			//	获取静态变量 i 的值（从主存获取值到工作内存）
-- iconst_i							//	准备一个常量，且值为 1，用于准备进行自增操作
-- iadd									//	进行自增操作
+- iconst_i					//	准备一个常量，且值为 1，用于准备进行自增操作
+- iadd						//	进行自增操作
 - putstatic      i			//	将自增后的值保存到静态变量 i 中（将值从工作内存保存到主存）
 ```
 
@@ -670,9 +670,9 @@ public class Test05 {
 又由于计算机是采用分时系统，所以多个线程间会存在上下文切换，所以会出现自增字节码指令还没执行完毕时，线程就进行上下文切换，导致数据错乱。
 
 ```java
-- 比如 t1 线程执行自增操作，执行 iadd 完成后，cup 时间片使用完毕，然后进行上下文切换（修改后的值还没从工作内存保存到主存
-- 这时 t2 线程执行自减操作，执行 getstatic 时，从主存中获取到的值为 0，而不是 1，然后进行自减后将 -1 从工作内存保存到主存
-- 然后 t2 运行完毕，轮到 t1 运行，t1 从上下文信息得知自己该执行 putstatic 指令了
+- 比如 t1 线程执行自增操作，执行 iadd 完成后，cup 时间片使用完毕，然后进行上下文切换（修改后的值还没从工作内存保存到主存）。
+- 这时 t2 线程执行自减操作，执行 getstatic 时，从主存中获取到的值为 0，而不是 1，然后进行自减后将 -1 从工作内存保存到主存。
+- 然后 t2 运行完毕，轮到 t1 运行，t1 从上下文信息得知自己该执行 putstatic 指令了。
 - 此时 t1 往下运行 putstatis 指令，将之前的运算结果 1 保存到主存，这样就出现了数据错乱！！！
 ```
 
@@ -746,11 +746,11 @@ Thread t2 = new Thread(() -> {
 
 - 阻塞式的解决方案：synchronized，Lock
 
-- 非阻塞式的解决方案：原子变量
+- 非阻塞式的解决方案：原子变量（CAS）
 
 
 
-`synchronized` 是 Java 中的一种关键字，用于控制对共享资源的访问，以保证线程安全。在多线程程序中，当多个线程访问同一个资源时，可能会发生竞争条件，导致数据不一致。通过使用 `synchronized`，可以确保同一时刻只有一个线程能够访问被同步的代码块或方法，从而避免数据冲突。
+`synchronized` 是 Java 中的一种关键字，用于控制对共享资源的访问，以保证线程安全。在多线程程序中，当多个线程访问同一个资源时，可能会发生竞争条件，导致数据错乱。通过使用 `synchronized`，可以确保同一时刻只有一个线程能够访问被同步的代码块或方法，从而避免数据冲突。
 
 
 
@@ -762,7 +762,7 @@ Thread t2 = new Thread(() -> {
 `synchronized` 可以用来修饰方法，表示该方法在同一时刻只能被一个线程执行。
 
 ```java
-public synchronized void method() {
+public synchronized void method() {  // 锁对象是 this
     // 同步代码块
 }
 ```
@@ -775,14 +775,15 @@ public synchronized void method() {
 `synchronized` 也可以用来修饰代码块，这样可以只同步部分代码，而不是整个方法。它需要一个锁对象，只有获取到这个锁的线程才能执行代码块中的代码。
 
 ```java
+Object lock = new Object();
 public void method() {
-    synchronized (lockObject) {
+    synchronized (lock) {
         // 同步代码块
     }
 }
 ```
 
-在这个例子中，`lockObject` 是一个对象锁，只有当线程获得 `lockObject` 锁时，才能执行代码块中的内容。
+在这个例子中，`lock` 是一个对象锁，只有当线程获得 `lock` 锁时，才能执行代码块中的内容。
 
 
 
@@ -900,7 +901,7 @@ public static void main(String[] args) throws InterruptedException {
 
 局部变量通常是方法内的变量，它们的生命周期仅限于方法调用的过程中，因此局部变量在线程安全性方面通常不需要额外考虑。
 
-- **局部变量是线程安全的**，因为每个线程都有自己的栈空间，每个线程在调用方法时都会在自己的栈上创建局部变量的副本。因此，多个线程调用同一个方法时，局部变量不会相互干扰。
+- **局部变量通常是线程安全的**，因为每个线程都有自己的栈空间，每个线程在调用方法时都会在自己的栈上创建局部变量的副本。因此，多个线程调用同一个方法时，局部变量不会相互干扰。
 - 但是，如果局部变量是引用类型对象并且该对象被共享或者该对象本身存在非线程安全的问题，则仍然需要考虑线程安全性。
 
 
@@ -909,7 +910,7 @@ public static void main(String[] args) throws InterruptedException {
 
 - **成员变量和静态变量**在多线程环境下通常不是线程安全的。它们可能需要同步机制来保证线程安全。
 
-- **局部变量**是线程安全的，因为每个线程都有独立的栈空间来存储局部变量的副本，除非局部变量是引用类型对象并且这些对象在多个线程间共享。
+- **局部变量**通常是线程安全的，因为每个线程都有独立的栈空间来存储局部变量的副本，除非局部变量是引用类型对象并且这些对象在多个线程间共享。
 
     
 
@@ -957,8 +958,6 @@ if (table.get("key") == null) {
     table.put("key", value);
 }
 ```
-
-
 
 时序图如下：
 
@@ -1068,27 +1067,22 @@ Java 的 monitor 是一种同步机制，用于控制多个线程对共享资源
     - 当你调用`Object.hashCode()`方法时，JVM会计算并返回对象的哈希值。为了优化性能，JVM会将对象的哈希码缓存起来，在`Mark Word`中存储。
 
     - 如果对象没有显式的哈希码值，JVM会计算它的哈希码。
-
 2. **Age**
     - 这个字段与垃圾回收（GC）相关，特别是与年轻代（Young Generation）中的对象生命周期有关。它记录了对象的年龄，即对象经历的GC轮次数。
     - 在对象晋升到老年代之前，年龄用于决定何时晋升对象。
-
 3. **Biased Lock**
     - **偏向锁**是一种优化，旨在减少锁竞争。偏向锁假定只有一个线程会访问该对象，因此它在`Mark Word`中存储了线程ID。如果对象的锁没有竞争，JVM会偏向于当前线程，这样可以避免每次获取锁时的复杂性。
     - 如果有其他线程争用锁，偏向锁会被撤销并转为轻量级锁（Spin Lock）。
-
 4. **Thread**
     - 这个字段存储了当前线程的ID，在偏向锁（Biased Lock）模式下使用。当对象加锁时，如果启用了偏向锁，JVM会记录哪个线程持有锁，以便后续的访问可以快速判断是否由该线程访问。
-
+    - 调用 `Object.hashCode()` 会导致偏向锁被撤销（要保存 hashcode，导致 线程id 没地方保存，只能被覆盖掉，导致锁被撤销）
 5. **Epoch**
     - 在JVM中，`Epoch`字段与偏向锁的撤销有关。它用于管理锁的偏向状态，通常与锁的撤销和重置操作相关。
-
 6. **ptr_to_lock_record**
 
-    - 这是指向锁记录的指针，用于在对象锁定时存储锁的相关信息。锁记录包含了对象的锁信息，可能用于管理不同的锁状态（如轻量级锁、重量级锁等）。
+    - 这是指向锁记录的指针，用于在对象锁定时存储锁的相关信息。锁记录包含了对象的锁信息，用于管理不同的锁状态（如轻量级锁、重量级锁等）。
 
     - 这个指针的存在是为了帮助JVM管理锁的状态转换，例如从偏向锁转换到轻量级锁或重量级锁。
-
 7. **ptr_to_heavyweight_monitor**
     - 当对象的锁变得非常争用（即多个线程试图访问同一个对象），对象的锁会变成重量级锁，这时JVM会将`Mark Word`中的相关信息转换为指向一个重量级监视器（heavyweight monitor）的指针。这个监视器用于管理线程的排队和阻塞。
 
@@ -1096,7 +1090,7 @@ Java 的 monitor 是一种同步机制，用于控制多个线程对共享资源
 
 ### 3.5.2 Monitor
 
-什么是 Monitor？可以把它理解为一个同步工具，也可以描述为一种同步机制，它通常被描述为一个对象。与一切皆对象一样，所有的 Java 对象是天生的 Monitor，每一个 Java 对象都有成为Monitor 的潜质，因为在 Java 的设计中 ，每一个 Java 对象自打娘胎里出来就带了一把看不见的锁，它叫做内部锁或者 Monitor 锁。Moniter 也就是通常说 Synchronized 的对象锁，MarkWord 锁标识位为 10，其中指针指向的是 Monitor 对象的起始地址。
+什么是 Monitor？可以把它理解为一个同步工具，也可以描述为一种同步机制，它通常被描述为一个对象。与一切皆对象一样，所有的 Java 对象是天生的 Monitor，每一个 Java 对象都有成为Monitor 的潜质，因为在 Java 的设计中 ，每一个 Java 对象自打娘胎里出来就带了一把看不见的锁（Monitor 由操作系统负责维护），它叫做内部锁或者 Monitor 锁。Moniter 也就是通常说 Synchronized 的对象锁，MarkWord 锁标识位为 10，其中指针指向的是 Monitor 对象的起始地址。
 
 在 Java 虚拟机（HotSpot）中，Monitor 是由 ObjectMonitor 实现的，其主要数据结构如下（位于HotSpot虚拟机源码ObjectMonitor.hpp文件，C++实现的）：
 
@@ -1107,7 +1101,7 @@ ObjectMonitor() {
     _waiters      = 0,
     _recursions   = 0;
     _object       = NULL;
-    _owner        = NULL;
+    _owner        = NULL; //持有锁的对象
     _WaitSet      = NULL; //处于wait状态的线程，会被加入到_WaitSet
     _WaitSetLock  = 0 ;
     _Responsible  = NULL ;
@@ -1123,7 +1117,26 @@ ObjectMonitor() {
 
 
 
-ObjectMonitor 中有两个队列，WaitSet 和 EntryList，用来保存 ObjectWaiter 对象列表（ 每个等待锁的线程都会被封装成 ObjectWaiter 对象 ），Owner 指向持有 ObjectMonitor 对象的线程，用于表示该对象锁已经被线程持有。图列：
+ObjectMonitor 中有两个队列，WaitSet 和 EntryList，用来保存 ObjectWaiter 对象列表（ 每个等待锁的线程都会被封装成 ObjectWaiter 对象 ），Owner 指向持有 ObjectMonitor 对象的线程，用于表示该对象锁已经被线程持有。
+
+
+
+比如有这样一段代码
+
+```java
+static final Object lock = new Object();
+static int counter = 0;
+
+public static void main(String[] args) {
+    synchronized (lock) {  // 【Thread-2 & Thread-3 & Thread-4 & Thread-5】都准备访问临界区
+        counter++;
+    }
+}
+```
+
+
+
+图例如下所示
 
 <img src="./assets/picture14.png" alt="image" style="zoom:50%;" />
 
@@ -1131,18 +1144,18 @@ ObjectMonitor 中有两个队列，WaitSet 和 EntryList，用来保存 ObjectWa
 
 上图的线程获取 Monitor 的流程如下：
 
-- 开始时     Monitor 中 Owner 为 null；
+- 开始时 Monitor 中 Owner 为 null；
 
-- 当 Thread-2 进入临界区并执行 synchronized(obj) 时，就会将     Monitor 的所有者 Owner 置为     Thread-2（Owner 指向线程对象，obj 对象的 Mark Word 指向 Monitor），把对象原有的     MarkWord 存入线程栈中的锁记录中；
-- 在     Thread-2 上锁的过程，Thread-3、Thread-4、Thread-5 页进入临界区并执行     synchronized(obj)，就会进入 EntryList（双向链表），线程状态变为 BLOCKED；
+- 当 Thread-2 进入临界区并执行 synchronized(obj) 时，就会将 Monitor 的所有者 Owner 置为 Thread-2（Owner 指向线程对象，obj 对象的 Mark Word 指向 Monitor），把对象原有的 MarkWord 存入线程栈中的锁记录中；
+- 在 Thread-2 上锁的过程，Thread-3、Thread-4、Thread-5 页进入临界区并执行 synchronized(obj)，就会进入 EntryList（双向链表），线程状态变为 BLOCKED；
 
-- Thread-2 执行完临界区的代码后，根据 obj 对象的 Mark Word 中的引用地址找到 Monitor 对象，设置 Owner 为空，并把此前保存在栈帧的锁记录中的     obj Mark Word     信息还原到 obj 的 Mark Word 中；
-- 然后 Thread-2 唤醒 EntryList     中等待的线程，被唤醒的线程开始竞争锁，竞争是非公平的，如果这时有新的线程想要获取锁，可能直接就抢占到了，阻塞队列的线程就会继续阻塞；
+- Thread-2 执行完临界区的代码后，根据 obj 对象的 Mark Word 中的引用地址找到 Monitor 对象，设置 Owner 为空，并把此前保存在栈帧的锁记录中的 obj Mark Word 信息还原到 obj 的 Mark Word 中；
+- 然后 Thread-2 唤醒 EntryList 中等待的线程，被唤醒的线程开始竞争锁，竞争是非公平的，如果这时有新的线程进来并想要获取锁，可能直接就抢占到了，阻塞队列的线程就会继续阻塞；
 - WaitSet 中的 Thread-0 和 Thread-1 是以前获得过锁，但由于不满足继续执行的条件，从而进入 WAITING 状态的线程（wait-notify 机制）；
 
  
 
-注意：synchronized 必须是进入同一个对象的 Monitor 才有上述的效果，不加 synchronized 的对象不会关联监视器，不遵从以上规则。
+需要注意的是，synchronized 必须是进入同一个对象的 Monitor 才有上述的效果，不加 synchronized 的对象不会关联监视器，不遵从以上规则。
 
 
 
@@ -1170,16 +1183,16 @@ public static void main(String[] args) {
 得到的字节码如下：
 
 ```java
-0: 	getstatic     #2		// 获取 lock 对象的引用，这个引用是 static final 类型的。#2 表示 lock 变量在常量池中的索引。
-3: 	dup									// dup 指令复制栈顶的对象引用（即 lock），为 monitorenter 指令提供必要的操作数。
-4: 	astore_1						// 将栈顶的 lock 引用存储到本地变量 1 位置。这个位置用于存储锁对象的副本。
-5: 	monitorenter				// 获取 lock 对象的监视器锁，确保同步代码块中代码的原子性。
+0: 	getstatic     #2	// 获取 lock 对象的引用，这个引用是 static final 类型的。#2 表示 lock 变量在常量池中的索引。
+3: 	dup					// dup 指令复制栈顶的对象引用（即 lock），为 monitorenter 指令提供必要的操作数。
+4: 	astore_1			// 将栈顶的 lock 引用存储到本地变量 1 位置。这个位置用于存储锁对象的副本。
+5: 	monitorenter		// 获取 lock 对象的监视器锁，确保同步代码块中代码的原子性。
 6: 	getstatic     #3    // 获取静态变量 counter 的值。#3 是 counter 变量在常量池中的索引。            
-9: 	iconst_1						// 将常量 1 推送到栈顶，准备与 counter 进行加法操作。
-10: iadd								// 将栈顶的两个整数相加（counter 和 1），并将结果压回栈顶。
+9: 	iconst_1			// 将常量 1 推送到栈顶，准备与 counter 进行加法操作。
+10: iadd				// 将栈顶的两个整数相加（counter 和 1），并将结果压回栈顶。
 11: putstatic     #3    // 将栈顶的值存回 counter 变量中，完成 counter++ 操作。
-14: monitorexit					// 释放 lock 对象的监视器锁，退出同步块，确保在多个线程中不会发生竞争条件。
-15: return							// 返回方法，程序执行结束。
+14: monitorexit			// 释放 lock 对象的监视器锁，退出同步块，确保在多个线程中不会发生竞争条件。
+15: return				// 返回方法，程序执行结束。
 
 ```
 
@@ -1255,11 +1268,7 @@ public static void main(String[] args) {
 
 ### 3.5.3.2 轻量级锁
 
-轻量级锁是为了减少锁竞争的开销。它在无竞争的情况下采用自旋的方式来获取锁，即线程尝试获取锁时，如果锁未被占用，线程会短时间内不断尝试获得锁。如果锁被占用，线程会放弃自旋，升级为重量级锁。
-
-
-
-简单来说：如果一个对象虽然有多线程要加锁，但加锁的时间是错开的（也就是没有竞争），那么可以使用轻量级锁来优化。
+轻量级锁是为了减少锁竞争的开销。简单来说：如果一个对象虽然有多线程要加锁，但加锁的时间是错开的（也就是没有竞争），那么可以使用轻量级锁来优化。
 
 
 
@@ -1268,8 +1277,8 @@ public static void main(String[] args) {
 ```java
 static final Object obj = new Object();
 
-public static void method1() {
-    synchronized (obj) {
+public static void method1() {	// Thread-0 上午访问，Thread-1 下午访问。时间是错开的
+    synchronized (obj) {  
         // 同步块 A
         method2();
     }
@@ -1290,7 +1299,7 @@ public static void method2() {
 
 1. 局部变量表：用于存储方法的输入参数和局部变量。每个局部变量占用一定的空间，按照顺序存储。
 
-2. 锁记录：包含【锁记录的地址引|00】以及【锁对象的引用】，应用与轻量级锁（让线程与锁对象相互找到对方，同时保存锁对情的对象头信息）。
+2. 锁记录：包含【锁记录的地址引|00】以及【锁对象的引用】，应用与轻量级锁（让线程与锁对象相互找到对方，同时保存锁对象的对象头信息）。
 
 3. 操作数栈：用于存储中间计算结果，是方法执行过程中用于操作的栈，类似于一个临时数据区。
 
@@ -1309,7 +1318,7 @@ public static void method2() {
 - 首先找到【Thread-0】的【method1栈贞】。
 - 然后找到【method1栈贞】的【锁记录】。
 - 然后在找到【锁记录】中的【Object reference】，将其引用指向【锁对象】。
-- 尝试用 CAS 替换 Object 的 Mark Word，将 Mark Word 的值存 入锁记录
+- 尝试用 CAS 替换 Object 的 Mark Word，将 Mark Word 的值存 入锁记录（用于后续恢复）。
 
 <img src="./assets/picture17.png" alt="image" style="zoom:50%;" />
 
@@ -1328,7 +1337,7 @@ public static void method2() {
 
 ### 3.5.3.3 重量级锁
 
-当多个线程频繁竞争同一锁时，轻量级锁会升级为重量级锁。重量级锁会使线程阻塞，操作系统需要将线程从用户态切换到内核态，开销较大。
+当多个线程频繁竞争同一把锁时，轻量级锁会升级为重量级锁。重量级锁会使线程阻塞，操作系统需要将线程从用户态切换到内核态，开销较大。
 
 
 
@@ -1346,7 +1355,7 @@ public static void method1() {
 
 
 
-当 Thread-1 进行轻量级加锁时，Thread-0 已经对该对象加了轻量级锁
+当 Thread-1 进行轻量级加锁时，发现 Thread-0 已经对该对象（synchronized(该对象)）加了轻量级锁
 
 <img src="./assets/picture20.png" alt="picture20" style="zoom: 50%;" />
 
@@ -1354,14 +1363,14 @@ public static void method1() {
 
 这时 Thread-1 加轻量级锁失败，进入锁膨胀流程
 
-- 立即为 Object 对象申请 Monitor 锁，让 Object 指向重量级锁地址。
+- 立即为 Object 对象申请 Monitor 锁，让 Object 指向重量级锁地址（Object 的 Mark Word 指向该 Monitor）。
 - 然后自己进入 Monitor 的 EntryList 中进行等待，并进入 BLOCKED 状态。
 
 <img src="./assets/picture21.png" alt="picture21" style="zoom: 50%;" />
 
 
 
-当【Thread-0】退出同步块解锁时，想使用 CAS 将 Mark Word 的值恢复给对象头，失败（锁对象的 Mark Word 标记为已经不是00，而是10，不能再按轻量级锁的流程解锁了）。这时会进入重量级解锁流程，即按照 Monitor 地址找到 Monitor 对象，设置 Owner 为 null，唤醒 EntryList 中 BLOCKED 线程。
+当【Thread-0】退出同步块解锁时，想使用 CAS 将 Mark Word 的值恢复给对象头，失败（锁对象的 Mark Word 标记为已经不是00，而是10，不能再按轻量级锁的流程解锁了）。这时会进入重量级解锁流程，即按照对象头中的 Monitor 引用找到 Monitor 对象，将 Monitor 的 Owner 属性设置为 null，然后唤醒 EntryList 中正在 BLOCKED 的线程。
 
 
 
@@ -1400,16 +1409,12 @@ Java 锁消除（Lock Elimination）是 JIT（即时编译器）优化的一部�
 
 ```java
 public class MyBenchmark {
-    static int x = 0;
-
-    public void a() throws Exception {
-        x++;
-    }
+    private static final Object lock = new Object();
 
     public void b() throws Exception {
-        Object o = new Object();
-        synchronized (o) {	// 局部变量，切没有逃逸，加不加锁没有影响，所以该锁会被 JIT 优化去掉
-            x++;
+        synchronized (lock) {	// 局部变量，且没有逃逸，加不加锁没有影响，所以该锁会被 JIT 优化去掉
+            int i = 0;
+            i++;
         }
     }
 }
@@ -1493,9 +1498,79 @@ wait() 和 sleep() 都用于暂停线程的执行，但它们有几个主要区�
 
 ### 3.6.5 park() 和 unpark()
 
+Java中的`park`和`unpark`是`java.util.concurrent.locks.LockSupport`类中的静态方法，用于管理线程的挂起与恢复。
+
+
+
+park()：
+
+- `park()`方法会使当前线程进入挂起状态，直到其他线程调用`unpark()`方法来唤醒它。
+
+- 该方法通常用于线程的同步和协调。
+
+  
+
+unpark(Thread thread)：
+
+- `unpark(Thread thread)`方法会唤醒一个被`park()`方法挂起的线程。
+- 它不会立即让线程执行，而是确保线程不再处于挂起状态，具体执行时机由线程调度器决定。
+
+
+
+假设有两个线程，`Thread A`和`Thread B`，`Thread A`需要等到`Thread B`完成某些任务之后才能继续执行。
+
+```java
+import java.util.concurrent.locks.LockSupport;
+
+public class ParkUnparkExample {
+
+    public static void main(String[] args) {
+        // 创建Thread A
+        Thread threadA = new Thread(() -> {
+            System.out.println("Thread A: I am waiting for Thread B.");
+            LockSupport.park(); // 线程A挂起，直到被唤醒
+            System.out.println("Thread A: I am now awake and continuing.");
+        });
+
+        // 创建Thread B
+        Thread threadB = new Thread(() -> {
+            try {
+                Thread.sleep(2000); // 模拟任务
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println("Thread B: Task completed, I will unpark Thread A now.");
+            LockSupport.unpark(threadA); // 唤醒线程A
+        });
+
+        // 启动线程
+        threadA.start();
+        threadB.start();
+    }
+}
+```
+
+代码解析：
+
+1. **Thread A**：在执行到`LockSupport.park()`时，它将进入挂起状态，直到被唤醒。
+
+2. **Thread B**：模拟一些任务完成后，通过`LockSupport.unpark(threadA)`唤醒`Thread A`。
+
+3. `LockSupport.park()`与`LockSupport.unpark()`可以用于实现更精细的线程同步和协调操作，避免了传统的`wait()`和`notify()`方法。
+
+   
+
+主要特性：
+
+- `park()`和`unpark()`不依赖于传统的锁机制，它们不需要拥有锁的对象，因此在并发场景下更加灵活。
+
+- 调用`unpark()`并不立即唤醒线程，而是标记该线程可以被唤醒，具体何时恢复由线程调度器决定。
+
+  
+
 park & unpark 和 wait & notify 的区别？
 
-- wait，notify 和 notifyAll 必须配合 Object Monitor 一起使用，而 park，unpark 不必。
+- wait，notify 和 notifyAll 必须配合 Monitor 一起使用，而 park，unpark 不必。
 
 - park & unpark 是以线程为单位来【阻塞】和【唤醒】线程，而 notify 只能随机唤醒一个等待线程，notifyAll 
 
@@ -1528,7 +1603,8 @@ public class ProducerConsumerExample {
 
     private static final Object lock = new Object(); // 锁对象
     private static int resource = 0; // 共享资源
-    private static final Logger logger = LoggerFactory.getLogger(ProducerConsumerExample.class); // 创建日志对象
+    // 创建日志对象
+    private static final Logger logger = LoggerFactory.getLogger(ProducerConsumerExample.class); 
 
     // 消费者线程
     static class Consumer extends Thread {
@@ -1629,7 +1705,7 @@ public class ProducerConsumerExample {
 
 模型如下：
 
-<img src="./assets/picture22-7903802.png" alt="picture22" style="zoom:50%;" />
+<img src="./assets/picture22.png" alt="picture22" style="zoom:50%;" />
 
 
 
