@@ -395,13 +395,15 @@ log.debug("main 线程执行结束");
 `Thread.join()` 调用此方法的线程被阻塞，仅当该方法完成以后，才能继续运行。
 
 ```java
+private static int r1 = 1;
+private static int r2 = 2;
+
 Thread thread1 = new Thread(() -> {
     try {
         Thread.sleep(1000);
     } catch (InterruptedException e) {
         log.error(e.getMessage());
     }
-    // private static int r1 = 1;
     r1 = 10;
 });
 
@@ -411,7 +413,6 @@ Thread thread2 = new Thread(() -> {
     } catch (InterruptedException e) {
         log.error(e.getMessage());
     }
-    // private static int r2 = 2;
     r2 = 20;
 });
 
@@ -419,7 +420,7 @@ thread1.start();
 thread2.start();
 
 try {
-    // 需要等待子线程执行完毕
+    // main线程进入阻塞状态，需要等待子线程（t1 & t2）执行完毕
     thread2.join();
     thread1.join();
 } catch (InterruptedException e) {
@@ -441,9 +442,81 @@ log.debug("r2 = {}", r2);
 
 ### 2.3.4 线程调度
 
-`yield()` 用于提示线程调度器让出当前线程对 CPU 的使用。
+`Thread.yield()` 是 Java 中 `Thread` 类的一个静态方法，它的作用是让当前正在执行的线程让出 CPU 的控制权，让其他同等优先级的线程有机会执行。也就是说，它提示线程调度器，让当前线程暂停执行，调度器可以选择其他线程执行，而不一定是当前线程。
 
-告知 CPU 调度器，当前线程已经完成了生命周期中最重要的部分，可以切换给其它线程来执行。该方法只是对线程调度器的一个建议，而且也只是建议具有相同优先级的其它线程可以运行，是否执行还是看 CUP 的调度策略。
+`Thread.yield()` 只是一个建议，线程调度器可以选择忽略这个建议，具体行为依赖于操作系统和 JVM 的实现。
+
+
+
+**用法示例：**
+
+```java
+public class ThreadYieldExample {
+
+    public static void main(String[] args) {
+        // 创建两个线程
+        Thread thread1 = new Thread(new Task("Thread 1"));
+        Thread thread2 = new Thread(new Task("Thread 2"));
+
+        // 启动线程
+        thread1.start();
+        thread2.start();
+    }
+
+    static class Task implements Runnable {
+        private String threadName;
+
+        public Task(String threadName) {
+            this.threadName = threadName;
+        }
+
+        @Override
+        public void run() {
+            for (int i = 0; i < 5; i++) {
+                System.out.println(threadName + " is running. Count: " + i);
+                
+                // 让当前线程让出 CPU 控制权
+                Thread.yield();
+            }
+        }
+    }
+}
+```
+
+**代码解释：**
+
+1. **创建两个线程**：`thread1` 和 `thread2`，每个线程都有一个任务。
+2. **线程任务**：每个线程会执行五次循环，并在每次循环中调用 `Thread.yield()`。
+3. **`Thread.yield()`**：当调用 `yield()` 时，当前线程将让出 CPU 控制权，操作系统会重新调度其他线程。因为这里的两个线程优先级相同，理论上它们会交替执行。
+
+
+
+**输出示例：**
+
+```
+Thread 1 is running. Count: 0
+Thread 2 is running. Count: 0
+Thread 1 is running. Count: 1
+Thread 2 is running. Count: 1
+Thread 1 is running. Count: 2
+Thread 2 is running. Count: 2
+Thread 1 is running. Count: 3
+Thread 2 is running. Count: 3
+Thread 1 is running. Count: 4
+Thread 2 is running. Count: 4
+```
+
+
+
+**注意事项**：
+
+- `Thread.yield()` 并不是强制性的，操作系统可以选择忽略它。
+
+- 它并不会强制让低优先级线程的运行，而只是让同优先级线程有机会运行。
+
+  
+
+这个方法的主要作用是在多线程环境下，尝试平衡线程的执行，但实际效果依赖于线程调度器的实现。
 
 
 
