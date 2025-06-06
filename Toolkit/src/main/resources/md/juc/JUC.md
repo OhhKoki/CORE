@@ -1039,23 +1039,19 @@ Java 的 monitor 是一种同步机制，用于控制多个线程对共享资源
 为了让一个 Word 能存储更多信息，JVM 将 Word 的最低两位设置为标记为，不同的标记为表示对象处于不同的状态，具体如下
 
 ```java
-|--------------------------------------------------------------------------------------------------------------|
-|                                          Object Header(64bits)                                               |
-|--------------------------------------------------------------------------------------------------------------|
-|                    Mark Word(32bits)                           |  Klass Word(32bits)    |      State         |
-|--------------------------------------------------------------------------------------------------------------|
-|     hashcode:25                   | age:4 | biased_lock:0 | 01 | OOP to metadata object |      Nomal         |
-|--------------------------------------------------------------------------------------------------------------|
-|     thread:23           | epoch:2 | age:4 | biased_lock:1 | 01 | OOP to metadata object |      Biased        |
-|--------------------------------------------------------------------------------------------------------------|
-|     ptr_to_lock_record:30                                 | 00 | OOP to metadata object | Lightweight Locked |
-|--------------------------------------------------------------------------------------------------------------|
-|     ptr_to_heavyweight_monitor:30                         | 10 | OOP to metadata object | Heavyweight Locked |
-|--------------------------------------------------------------------------------------------------------------|
-|                                                           | 11 | OOP to metadata object |    Marked for GC   |
-|--------------------------------------------------------------------------------------------------------------|
-
-
+|-------------------------------------------------------|--------------------|
+|                  Mark Word (32 bits)                  |       State        |
+|-------------------------------------------------------|--------------------|
+| identity_hashcode:25 | age:4 | biased_lock:1 | lock:2 |       Normal       |
+|-------------------------------------------------------|--------------------|
+|  thread:23 | epoch:2 | age:4 | biased_lock:1 | lock:2 |       Biased       |
+|-------------------------------------------------------|--------------------|
+|               ptr_to_lock_record:30          | lock:2 | Lightweight Locked |
+|-------------------------------------------------------|--------------------|
+|               ptr_to_heavyweight_monitor:30  | lock:2 | Heavyweight Locked |
+|-------------------------------------------------------|--------------------|
+|                                              | lock:2 |    Marked for GC   |
+|-------------------------------------------------------|--------------------|
 ```
 
 
@@ -1875,11 +1871,11 @@ class MessageQueue {
 
 **情况 5、RUNNABLE <--> TIMED_WAITING**
 
-**t** **线程**用 synchronized(obj) 获取了对象锁后
+**t** **线程**调用 synchronized(obj) 获取了对象锁后
 
 - 调用 obj.wait(long n) 方法时，**t** **线程**从 RUNNABLE --> TIMED_WAITING
 
-- **t** **线程**等待时间超过了 n 毫秒，或调用 obj.notify() ， obj.notifyAll() ， t.interrupt() 时
+- **t** **线程**等待时间超过了 n 毫秒，或其他线程调用 obj.notify() ， obj.notifyAll() ， t.interrupt() 时
     - 竞争锁成功，**t** **线程**从 TIMED_WAITING --> RUNNABLE
     - 竞争锁失败，**t** **线程**从 TIMED_WAITING --> BLOCKED
 
@@ -1910,7 +1906,7 @@ class MessageQueue {
 
 **情况 9、RUNNABLE <--> BLOCKED**
 
-- **t** **线程**用 synchronized(obj) 获取了对象锁时如果竞争失败，从 RUNNABLE --> BLOCKED
+- **t** **线程**调用 synchronized(obj) 获取了对象锁时如果竞争失败，从 RUNNABLE --> BLOCKED
 - 持 obj 锁线程的同步代码块执行完毕，会唤醒该对象上所有 BLOCKED 的线程重新竞争，如果其中 **t** **线程**竞争成功，从 BLOCKED --> RUNNABLE ，其它失败的线程仍然 BLOCKED
 
 
@@ -1925,7 +1921,7 @@ class MessageQueue {
 
 一间大屋子有两个功能：睡觉、学习，互不相干。
 
-- 现在张三要学习，里斯要睡觉，但如果只用一间屋子（一个对象锁）的话，那么并发度很低。
+- 现在张三要学习，李四要睡觉，但如果只用一间屋子（一个对象锁）的话，那么并发度很低。
 - 解决方法是准备多个房间（多个对象锁）
 
 
@@ -2005,7 +2001,7 @@ public class RoomExample {
 
 怎么定位死锁？
 
-1. 使用 jps 
+1. 使用 jps 获取 java 进程的 pid。
     - `jps` 是一个用于列出当前系统中所有运行的 Java 进程及其相关信息（比如 pid：进程 id）的工具。
 2. 使用 jstack （需要 pid ）获取到某个正在运行的 java 进程的堆栈信息 
     - `jstack` 是 Java 提供的一个命令行工具，用于打印 Java 进程的线程堆栈信息。
@@ -2015,8 +2011,8 @@ public class RoomExample {
 以下是一个死锁的案列
 
 ```java
-Object A = new Object();
-Object B = new Object();
+private static final Object A = new Object();
+private static final Object B = new Object();
 
 Thread t1 = new Thread(() -> {
     synchronized (A) {
@@ -2435,6 +2431,10 @@ await()
 - 使当前线程进入等待状态，直到被其他线程唤醒。
 - 线程会自动释放锁，其他线程可以获取锁。
 
+await(long time, TimeUnit unit)
+- 等待指定的时间，或者直到被唤醒。
+- 如果在指定的时间内没有被唤醒，线程将自动返回。
+
 signal()
 - 唤醒一个正在等待该 Condition 对象的线程。
 - 被唤醒的线程将重新竞争锁。
@@ -2442,10 +2442,6 @@ signal()
 signalAll()
 - 唤醒所有正在等待该 Condition 对象的线程。
 - 所有被唤醒的线程将重新竞争锁。
-
-await(long time, TimeUnit unit)
-- 等待指定的时间，或者直到被唤醒。
-- 如果在指定的时间内没有被唤醒，线程将自动返回。
 ```
 
 
@@ -2568,7 +2564,7 @@ class SyncWaitNotify {
                     }
                 }
                 System.out.print(str);
-                flag = nextFlag;
+                this.flag = nextFlag;
                 this.notifyAll();
             }
         }
