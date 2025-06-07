@@ -2745,7 +2745,7 @@ class SyncPark {
 
 ## 4.1 JMM
 
-JMM 即 Java Memory Model，它定义了主存、工作内存抽象概念，底层对应着 CPU 寄存器、缓存、硬件内存、CPU 指令优化等。
+JMM 即 Java Memory Model，它定义了主存、工作内存的抽象概念，底层对应着 CPU 寄存器、缓存、硬件内存、CPU 指令优化等。
 
 - 主内存（Main Memory）
 
@@ -2771,7 +2771,7 @@ JMM 即 Java Memory Model，它定义了主存、工作内存抽象概念，底�
 
 JMM 体现在以下几个方面：
 
-- 原子性 - 保证指令不会受到线程上下文切换的影响（就是第四章的锁）。
+- 原子性 - 保证指令不会受到线程上下文切换的影响（就是第三章的锁）。
 - 可见性 - 保证指令不会受 cpu 缓存的影响。
 - 有序性 - 保证指令不会受 cpu 指令并行优化的影响。
 
@@ -2853,18 +2853,18 @@ getstatic run // 线程 t 获取 run false
 
 
 
-比较一下之前我们将线程安全时举的例子：假设i的初始值为0，两个线程一个 i++ 一个 i-- ，只能保证看到最新值，不能解决指令交错
+比较一下之前我们将线程安全时举的例子：假设 i 的初始值为0，两个线程一个 i++ 一个 i-- ，只能保证看到最新值，不能解决指令交错
 
 ```java
 getstatic i			// 线程2：获取静态变量i的值 线程内i=0
 
 getstatic i			// 线程1：获取静态变量i的值 线程内i=0
-iconst_1				// 线程1：准备常量1
-iadd						// 线程1：自增 线程内i=1
+iconst_1			// 线程1：准备常量1
+iadd				// 线程1：自增 线程内i=1
 putstatic i			// 线程1：将修改后的值存入静态变量i 静态变量i=1
 
-iconst_1				// 线程2：准备常量1
-isub						// 线程2：自减 线程内i=-1
+iconst_1			// 线程2：准备常量1
+isub				// 线程2：自减 线程内i=-1
 putstatic i			// 线程2：将修改后的值存入静态变量i 静态变量i=-1
 ```
 
@@ -3045,6 +3045,12 @@ CAS操作通常由硬件提供支持，它是乐观锁的一种实现方式。Ja
 
 
 需要注意的是：CAS 必须借助 volatile 才能读取到共享变量的最新值来实现【比较并交换】的效果。
+
+- volatile 的底层实现原理是内存屏障，Memory Barrier（Memory Fence）
+  - 对 volatile 变量的写指令后会加入写屏障
+    - 写屏障（sfence）保证在该屏障之前的，对共享变量的改动，都同步到主存当中
+  - 对 volatile 变量的读指令前会加入读屏障
+    - 而读屏障（lfence）保证在该屏障之后，对共享变量的读取，加载的是主存中最新数据
 
 
 
@@ -3229,6 +3235,12 @@ while (true) {
 ## 5.2 原子整数
 
 Java 的原子整数类（`AtomicBoolean`, `AtomicInteger`, `AtomicLong`）提供了在并发环境下对基本数据类型（布尔值、整数、长整数）的线程安全操作。它们都位于 `java.util.concurrent.atomic` 包中，能够避免使用传统的锁机制（如 `synchronized` 或 `ReentrantLock`），提高并发性能。
+
+
+
+> [!NOTE]
+>
+> 后续增加构造，以及各个方法的使用案例
 
 
 
@@ -3681,7 +3693,10 @@ public class LongAdderExample {
 }
 ```
 
+
+
 ### 5.6.2 **DoubleAdder**
+
 `DoubleAdder` 类似于 `LongAdder`，但是用于 `double` 类型的原子累加。它也采用了分散的计数器结构，从而在高并发时提高性能，减少线程之间的竞争。
 
 **使用场景**：
@@ -3723,7 +3738,10 @@ public class DoubleAdderExample {
 为什么使用 `LongAdder` 和 `DoubleAdder` 而不是 `AtomicLong` 和 `AtomicDouble`？
 
 - **性能优势**：`AtomicLong` 和 `AtomicDouble` 采用的是单一的变量进行操作，每次修改都会导致锁竞争，而 `LongAdder` 和 `DoubleAdder` 通过内部多个计数器并行工作，减少了线程之间的竞争，从而提升了性能。
+
 - **高并发场景**：在高并发下，如果有很多线程同时对一个变量进行修改，`LongAdder` 和 `DoubleAdder` 提供了更好的吞吐量和响应时间。
+
+  
 
 总的来说，当面对高并发的累加操作时，`LongAdder` 和 `DoubleAdder` 是更合适的选择，能够有效提高性能并减少锁竞争。
 
@@ -3737,16 +3755,17 @@ public class DoubleAdderExample {
 
 **常用方法：**
 
-**`compareAndSwapInt`**：用于比较并交换一个对象的 `int` 类型字段的值。
+用于比较并交换一个对象的 `int` 类型字段的值。
 
 ```java
 public native boolean compareAndSwapInt(Object o, long offset, int expected, int update);
 ```
-**`compareAndSwapObject`**：用于比较并交换一个对象的引用类型字段的值。
+用于比较并交换一个对象的引用类型字段的值。
 
 ```java
 public native boolean compareAndSwapObject(Object o, long offset, Object expected, Object update);
 ```
+
 
 
 **使用示例**
@@ -3914,7 +3933,8 @@ public final class ImmutableClass {
 
 通过这种设计，我们可以确保不可变类的对象在创建后就保持不变，从而避免了在多线程环境下出现修改对象状态的错误。一个典型的不可变类设计遵循以下原则：
 
-- 使用 final 类和字段；
+- 使用 final 类
+- private & final 字段；
 - 提供只有 getter 方法，没有 setter 方法；
 - 确保字段的深拷贝（尤其是引用类型）；
 - 确保类初始化后不能改变对象的状态。
@@ -3965,7 +3985,7 @@ public class MathUtils {
 
 ## 7.1 线程池
 
-Java的线程池通过`Executor`框架管理线程，允许复用已有的线程来执行多个任务，从而提高程序的性能和资源利用效率。
+Java线程池通过复用线程来提高任务执行效率，避免了频繁创建和销毁线程的开销。它提供了多种类型的线程池，能灵活管理并发任务。
 
 
 
@@ -4225,9 +4245,9 @@ class ThreadPool {
 
 ### 7.1.2 Executor
 
-Java的线程池（`Executor`）是通过预先创建一组线程来管理和调度任务的技术，从而避免了频繁创建和销毁线程的开销。线程池的使用有助于提高性能和资源利用率。
+线程池的核心接口是`Executor`，它定义了执行任务的方法。在 Java 中，线程池通常由`ExecutorService`接口及其实现类提供支持，常用的线程池实现包括`ThreadPoolExecutor`和`ScheduledThreadPoolExecutor`。
 
-![image](./assets/picture29.png)
+<img src="./assets/picture29.png" alt="image" style="zoom:50%;" />
 
 #### 1. **核心接口**
    - **`Executor`**: 定义了执行任务的方法，但不关心线程的管理。
@@ -4248,8 +4268,8 @@ Java的线程池（`Executor`）是通过预先创建一组线程来管理和调
 #### 3. **线程池的核心参数**
    - **核心线程数（`corePoolSize`）**: 保持活动的线程数，默认情况下，如果线程数少于核心线程数，即使空闲，也不会被回收。
    - **最大线程数（`maximumPoolSize`）**: 线程池允许的最大线程数。
-   - **空闲线程的存活时间（`keepAliveTime`）**: 空闲线程在被销毁之前的最大存活时间（针对救急线程）。
-   - **时间单位（`unit`）**: 指定时间单位（针对救急线程）。
+   - **空闲线程的存活时间（`keepAliveTime`）**: 空闲线程在被销毁之前的最大存活时间。
+   - **时间单位（`unit`）**: 指定空闲线程的存活时间单位。
    - **任务队列（`BlockingQueue`）**: 用于存放待执行任务的队列。常见的队列有`LinkedBlockingQueue`、`ArrayBlockingQueue`、`SynchronousQueue`等。
    - **线程工厂（`ThreadFactory`）**: 用于创建新线程的工厂（主要用于指定线程的名字）。
    - **拒绝策略（`RejectedExecutionHandler`）**: 当线程池无法处理更多的任务时，选择如何处理任务。常见的拒绝策略有：`AbortPolicy`（默认，抛出异常）、`CallerRunsPolicy`（调用者执行任务）、`DiscardPolicy`（丢弃任务）等。
@@ -4260,7 +4280,7 @@ Java的线程池（`Executor`）是通过预先创建一组线程来管理和调
 
    2. 如果核心线程数已满，则任务会被提交到任务队列中等待。
 
-   3. 如果任务队列已满且活跃线程数还未达到最大线程数时，线程池会创建更多的线程（救急线程）来执行任务。
+   3. 如果任务队列已满且活跃线程数还未达到最大线程数时，线程池会创建更多的线程（空闲线程）来执行任务。
 
    4. 如果线程池的线程数达到最大线程数，并且任务队列已满，线程池会根据拒绝策略处理超出的任务。
 
@@ -4269,8 +4289,14 @@ Java的线程池（`Executor`）是通过预先创建一组线程来管理和调
 #### 5. **常用的线程池工厂方法**
 
    - **`Executors.newFixedThreadPool(int nThreads)`**: 创建固定大小的线程池。
+     - 核心线程数 == 最大线程数（没有救急线程被创建），因此也无需超时时间。
+
    - **`Executors.newCachedThreadPool()`**: 创建一个可缓存的线程池，线程池的线程数会根据需求增长，空闲线程会被回收。
+     - 核心线程数是 0， 最大线程数是 Integer.MAX_VALUE，救急线程的空闲生存时间是 60s。
+
    - **`Executors.newSingleThreadExecutor()`**: 创建一个只有单个线程的线程池，适用于只需要一个线程的任务。
+     - 使用场景：希望多个任务排队执行。线程数固定为 1，任务数多于 1 时，会放入无界队列排队。
+
 
 
 
@@ -4520,8 +4546,6 @@ public class Test {
 
 
 
-
-
 **应用场景：**AQS广泛用于实现各种同步器
 
 - **ReentrantLock**：可重入锁
@@ -4613,6 +4637,23 @@ class Worker implements Runnable {
 
 
 
+**执行结果**
+
+```java
+21:10:07 [Thread-0] - Thread-0 is working.
+21:10:07 [Thread-2] - Thread-2 is working.
+21:10:07 [Thread-1] - Thread-1 is working.
+21:10:09 [Thread-1] - Thread-1 finished working.
+21:10:09 [Thread-0] - Thread-0 finished working.
+21:10:09 [Thread-2] - Thread-2 finished working.
+21:10:09 [Thread-3] - Thread-3 is working.
+21:10:09 [Thread-4] - Thread-4 is working.
+21:10:11 [Thread-3] - Thread-3 finished working.
+21:10:11 [Thread-4] - Thread-4 finished working.
+```
+
+
+
 **注意事项**
 
 1. **公平性**：`Semaphore`的公平性是通过传入`true`来保证的，表示线程按请求顺序获取许可（即FIFO）。默认是非公平的。
@@ -4672,8 +4713,7 @@ import java.util.concurrent.CountDownLatch;
 /**
  * 1. 主线程通过调用 latch.await() 来等待所有子线程完成，子线程在执行完各自的任务后调用 latch.countDown()。
  * 2. 当 countDown() 被调用三次后，计数器变为零，主线程才能继续执行，输出 All workers have finished their tasks.
- *
-/
+ */
 public class CountDownLatchExample {
     public static void main(String[] args) throws InterruptedException {
         // 创建一个计数器为3的 CountDownLatch
