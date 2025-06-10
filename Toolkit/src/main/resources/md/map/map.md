@@ -14,6 +14,8 @@ public class HashMap<K,V> extends AbstractMap<K,V> implements Map<K,V>, Cloneabl
     static final int TREEIFY_THRESHOLD = 8;
     // 链表转红黑树的阈值2：table 的长度不小于 64
     static final int MIN_TREEIFY_CAPACITY = 64;
+    // 将红黑树转为链表的阈值
+    static final int UNTREEIFY_THRESHOLD = 6;
     
     // 键值对的数量
     transient int size;
