@@ -350,7 +350,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V> implements Concurre
     
     /**
      * sizeCtl默认为 0（int类型的默认值）：
-     *  1、在正常情况下，sizeCtl 表示扩容阈值，是个正数，sizeCtl = DEFAULT_CAPACITY - (DEFAULT_CAPACITY>>2)
+     *  1、在正常情况下，sizeCtl 表示扩容阈值，是个正数，sizeCtl = CAPACITY - (CAPACITY>>2)
      *  2、当table正在初始化时，sizeCtl值置为-1，表示当前正在初始化，其他线程只需要判断sizeCtl==-1 ，就知道数组正在初始化。
      *  3、当table正在扩容时，sizeCtl值置为负数，表示当前有多少个线程正在协助扩容的负数（例如：有三个，则为 -3）。
      */
@@ -415,6 +415,19 @@ ConcurrentHashMap 添加数据时，采取了 CAS + synchronize 结合的策略�
 
 
 
+核心流程如下：
+
+1. **定位桶**：根据 `key` 的 `hash` 计算桶位置 `i`。
+2. **读取头节点**：`tabAt(tab, i)`（`volatile` 读）。
+3. **空桶**：通过 CAS 插入新节点（原子+可见）。
+4. **非空桶**：
+   - 锁住头节点 (`synchronized (f)`)。
+   - 遍历链表/树更新或插入节点。
+   - 修改 `volatile` 字段（`val`/`next`）。
+5. **扩容**：若需扩容，新数组 `nextTable` 通过 `volatile` 写替换旧数组。
+
+
+
 在并发较低的情景下无需加锁，可以显著提高性能。同时只会 CAS 尝试一次，也不会造成线程长时间等待浪费 CPU 时间的情况。详情：
 
 1. 首先会判断数组是否已经初始化，如若未初始化，会先去初始化数组；
@@ -435,8 +448,7 @@ final V putVal(K key, V value, boolean onlyIfAbsent) {
      * 当 get() 返回 null 时无法判断是哪种情况，在并发环境下 containsKey() 不再可靠
      */
     if (key == null || value == null) throw new NullPointerException();
-    // 
-    // 高低位异或扰动 hashcode，和 HashMap 类似，但有一点点不同
+    // 高低位异或扰动 hashcode，和 HashMap 类似，但有一点点不同，确保返回的 hash 值是个正数（& 01111... 31个，高位位零）
     int hash = spread(key.hashCode());
     // bincount 表示链表的节点数
     int binCount = 0;
@@ -446,7 +458,6 @@ final V putVal(K key, V value, boolean onlyIfAbsent) {
         // 情况一：如果数组为空则进行初始化
         if (tab == null || (n = tab.length) == 0)
             tab = initTable();
-
         else if ((f = tabAt(tab, i = (n - 1) & hash)) == null) {
             // 情况二：目标下标对象为 null，采用CAS进行插入
             if (casTabAt(tab, i, null,new Node<K,V>(hash, key, value, null)))
@@ -605,7 +616,7 @@ public V get(Object key) {
 
 ### 2.5 数组扩容
 
-ConcurrentHashMap的扩容是多个线程协同工作的，提高了效率，如下图：
+ConcurrentHashMap 的扩容是多个线程协同工作的，提高了效率，如下图：
 
 ![img](assets/img04.png)
 
@@ -613,7 +624,7 @@ ConcurrentHashMap 把整个数组进行分段，每个线程负责一段。bound
 
 
 
-扩容的逻辑是发生在 addCount() 的过程中的，这个方法一共做两件事：
+扩容的逻辑是发生在 addCount() 和 treeifyBin() 的过程中的 transfer()，以 addCount() 为例，这个方法一共做两件事：
 
 1. 统计散列表中的元素个数；
 2. 进行散列表的扩容；
@@ -679,7 +690,7 @@ private final void addCount(long x, int check) {
 }
 ```
 
-上面的方法重点是利用sizeCtl充当自旋锁，保证只有一个现场能创建新的数组，而其他的线程只能协助迁移数组。那么下面的方法就是扩容方案的重点方法：
+上面的方法重点是利用 sizeCtl 充当自旋锁，保证只有一个线程能创建新的数组，而其他的线程只能协助迁移数组。那么下面的方法就是扩容方案的重点方法：
 
 ```java
 // 这里的两个参数：tab表示旧数组，nextTab表示新数组
