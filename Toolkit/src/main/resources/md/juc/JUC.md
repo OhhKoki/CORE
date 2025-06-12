@@ -4267,13 +4267,20 @@ class ThreadPool {
 
 #### 3. **线程池的核心参数**
    - **核心线程数（`corePoolSize`）**: 保持活动的线程数，默认情况下，如果线程数少于核心线程数，即使空闲，也不会被回收。
+
    - **最大线程数（`maximumPoolSize`）**: 线程池允许的最大线程数。
+
    - **空闲线程的存活时间（`keepAliveTime`）**: 空闲线程在被销毁之前的最大存活时间。
+
    - **时间单位（`unit`）**: 指定空闲线程的存活时间单位。
+
    - **任务队列（`BlockingQueue`）**: 用于存放待执行任务的队列。常见的队列有`LinkedBlockingQueue`、`ArrayBlockingQueue`、`SynchronousQueue`等。
+
    - **线程工厂（`ThreadFactory`）**: 用于创建新线程的工厂（主要用于指定线程的名字）。
+
    - **拒绝策略（`RejectedExecutionHandler`）**: 当线程池无法处理更多的任务时，选择如何处理任务。常见的拒绝策略有：`AbortPolicy`（默认，抛出异常）、`CallerRunsPolicy`（调用者执行任务）、`DiscardPolicy`（丢弃任务）等。
-   - 
+
+     
 
 #### 4. **线程池的工作流程**
    1. 当提交任务时，如果当前活跃线程数小于核心线程数，会立即创建一个新线程执行任务。
