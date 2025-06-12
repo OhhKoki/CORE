@@ -326,6 +326,56 @@ remove()：使用 synchronized 来保证线程安全；
 
 
 
+CAS 场景：
+
+- 初始化 table：`tab = initTable()`
+- put() 插入数据时，如果桶为空，则使用 CAS 插入数据：`casTabAt(tab, i, null, new Node<K,V>(hash, key, value)`
+
+
+
+sychronized 场景：
+
+- put() 插入数据时，如果桶的【头节点不为空，且不是 ForwardingNode】时，那么桶中的数据只可能是链表或者红黑树，则加锁
+
+  ```java
+  else if ((f = tabAt(tab, i = (n - 1) & hash)) == null) {
+      // 头节点为空则进行 CAS 插入
+  } else if ((fh = f.hash) == MOVED) {
+      // 头节点是 ForwardingNode，则协助扩容
+      tab = helpTransfer(tab, f);
+  } else {
+      // 当前桶里面，要么是链表，要么是红黑树
+      synchronized (f) {
+          if (fh >= 0) {
+              // 为链表：Node 节点为正数，红黑树的头节点 TreeBin 为 -1
+          }
+          else if (f instanceof TreeBin) {
+              // 为红黑树
+          }
+      }
+  }
+  ```
+
+- 链表转红黑树，以及扩容，都需要上锁
+
+  ```java
+  private final void treeifyBin(Node<K,V>[] tab, int index) {
+      // 省略其他代码
+      
+      if ((n = tab.length) < MIN_TREEIFY_CAPACITY)
+          // 链表长度小于64，先扩容，没必要树化
+          // 调用 transfer() 进行扩容（使用了 CAS + sychronized）
+          tryPresize(n << 1);
+      else if ((b = tabAt(tab, index)) != null && b.hash >= 0) {
+          synchronized (b) {
+              // 链表转红黑树
+          }
+      }
+  }
+  ```
+
+  
+
 ### 2.2 核心定义
 
 以下是 HashMap 中最核心的成员变量以及相关的类定义
@@ -421,7 +471,7 @@ ConcurrentHashMap 添加数据时，采取了 CAS + synchronize 结合的策略�
 2. **读取头节点**：`tabAt(tab, i)`（`volatile` 读）。
 3. **空桶**：通过 CAS 插入新节点（原子+可见）。
 4. **非空桶**：
-   - 锁住头节点 (`synchronized (f)`)。
+   - 锁住头节点 (`synchronized (first)`)。
    - 遍历链表/树更新或插入节点。
    - 修改 `volatile` 字段（`val`/`next`）。
 5. **扩容**：若需扩容，新数组 `nextTable` 通过 `volatile` 写替换旧数组。
