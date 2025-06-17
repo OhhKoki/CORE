@@ -70,8 +70,8 @@ Java 针对这些问题的解决方案是什么？
 
 ```java
 public class Singleton {
-  static Singleton instance;
-  static Singleton getInstance(){
+  private static Singleton instance;
+  public static Singleton getInstance(){
     if (instance == null) {
       synchronized(Singleton.class) {
         if (instance == null)
@@ -85,11 +85,21 @@ public class Singleton {
 
 
 
-instance = new Singleton() 语句经过编译优化重排序后的CPU执行过程可能是：
+instance = new Singleton() 语句正常的执行流程为：
+
+- 分配一块内存M；
+
+- 在内存M上初始化Singleton对象。
+
+- 将M的地址赋值给instance实例；
+
+  
+
+经过编译优化重排序后的CPU执行过程可能是：
 
 - 分配一块内存M；
 - 将M的地址赋值给instance实例；
-- 最后再内存M上初始化Singleton对象。
+- 在内存M上初始化Singleton对象。
 
 
 
@@ -141,13 +151,13 @@ instance = new Singleton() 语句经过编译优化重排序后的CPU执行过�
 
 创建后尚未启动。
 
-调用了 start()，仅仅是在语言层面创建了一个线程，此时还没有与操作系统进行关联。
+调用了 new Thread()，仅仅是在语言层面创建了一个线程，此时还没有与操作系统进行关联。
 
 
 
 ### 2.1.2 可运行(Runnable)
 
-可能正在运行，也可能正在等待 CPU 时间片。
+调用了 start() 后从 new -> runnable，此时可能正在运行，也可能正在等待 CPU 时间片。
 
 包含了操作系统线程状态中的 Running 和 Ready。
 
@@ -213,7 +223,7 @@ instance = new Singleton() 语句经过编译优化重排序后的CPU执行过�
 
 继承与实现接口相比，实现接口会更好一些，因为:
 
-- Java 不支持多重继承，因此继承了 Thread 类就无法继承其它类，但是可以实现多个接口；
+- Java 不支持多重继承，因此继承了 Thread 类就无法继承其它类，但是可以实现多个接口。
 - 类可能只要求可执行就行，继承整个 Thread 类开销过大。
 
 
@@ -273,7 +283,7 @@ try {
 
 ```java
 // 创建线程
-Thread thread = new Thread(){
+Thread thread = new Thread() {
     public void run() {
         try {
             Thread.sleep(3000);
@@ -301,6 +311,8 @@ thread.start();
 `Thread.sleep(millisec)` 用于休眠当前正在执行的线程，millisec 单位为毫秒。
 
 sleep() 可能会抛出 InterruptedException，因为异常不能跨线程传播回 main() 中，因此必须在本地进行处理。线程中抛出的其它异常也同样需要在本地进行处理。
+
+该方法不会释放锁
 
 ```java
 Thread thread = new Thread(() -> {
@@ -977,7 +989,7 @@ Java 的 monitor 是一种同步机制，用于控制多个线程对共享资源
 
 - JVM 将对象所在的 class 文件加载到方法区中；
 - JVM 读取 main 方法入口，将 main 方法入栈，执行创建对象代码;
-- 在 main 方法的栈内存中分配对象的引用，在堆中分配内存放入创建的对象，并将栈中的引用指向堆中的对象;
+- 在 main 方法的栈内存中分配对象的引用，在堆中分配内存并创建对象，最后将栈中的引用指向堆中的对象;
 
 
 
@@ -1038,21 +1050,7 @@ Java 的 monitor 是一种同步机制，用于控制多个线程对共享资源
 
 为了让一个 Word 能存储更多信息，JVM 将 Word 的最低两位设置为标记为，不同的标记为表示对象处于不同的状态，具体如下
 
-```java
-|-------------------------------------------------------|--------------------|
-|                  Mark Word (32 bits)                  |       State        |
-|-------------------------------------------------------|--------------------|
-| identity_hashcode:25 | age:4 | biased_lock:1 | lock:2 |       Normal       |
-|-------------------------------------------------------|--------------------|
-|  thread:23 | epoch:2 | age:4 | biased_lock:1 | lock:2 |       Biased       |
-|-------------------------------------------------------|--------------------|
-|               ptr_to_lock_record:30          | lock:2 | Lightweight Locked |
-|-------------------------------------------------------|--------------------|
-|               ptr_to_heavyweight_monitor:30  | lock:2 | Heavyweight Locked |
-|-------------------------------------------------------|--------------------|
-|                                              | lock:2 |    Marked for GC   |
-|-------------------------------------------------------|--------------------|
-```
+![img](assets/picture31.png)
 
 
 
@@ -1080,7 +1078,7 @@ Java 的 monitor 是一种同步机制，用于控制多个线程对共享资源
 
     - 这个指针的存在是为了帮助JVM管理锁的状态转换，例如从偏向锁转换到轻量级锁或重量级锁。
 7. **ptr_to_heavyweight_monitor**
-    - 当对象的锁变得非常争用（即多个线程试图访问同一个对象），对象的锁会变成重量级锁，这时JVM会将`Mark Word`中的相关信息转换为指向一个重量级监视器（heavyweight monitor）的指针。这个监视器用于管理线程的排队和阻塞。
+    - 当对象的锁发生竞争，对象的锁会变成重量级锁，这时JVM会将`Mark Word`中的相关信息转换为指向一个重量级监视器的指针。这个监视器用于管理线程的排队和阻塞。
 
 
 
@@ -1142,10 +1140,10 @@ public static void main(String[] args) {
 
 - 开始时 Monitor 中 Owner 为 null；
 
-- 当 Thread-2 进入临界区并执行 synchronized(obj) 时，就会将 Monitor 的所有者 Owner 置为 Thread-2（Owner 指向线程对象，obj 对象的 Mark Word 指向 Monitor），把对象原有的 MarkWord 存入线程栈中的锁记录中；
-- 在 Thread-2 上锁的过程，Thread-3、Thread-4、Thread-5 页进入临界区并执行 synchronized(obj)，就会进入 EntryList（双向链表），线程状态变为 BLOCKED；
+- 当 Thread-2 进入临界区并执行 synchronized(lock) 时，就会将 Monitor 的所有者 Owner 置为 Thread-2（Owner 指向线程对象，lock 对象的 Mark Word 指向 Monitor），把对象原有的 MarkWord 存入线程栈中的锁记录中；
+- 在 Thread-2 上锁的过程，Thread-3、Thread-4、Thread-5 页进入临界区并执行 synchronized(lock)，就会进入 EntryList（双向链表），线程状态变为 BLOCKED；
 
-- Thread-2 执行完临界区的代码后，根据 obj 对象的 Mark Word 中的引用地址找到 Monitor 对象，设置 Owner 为空，并把此前保存在栈帧的锁记录中的 obj Mark Word 信息还原到 obj 的 Mark Word 中；
+- Thread-2 执行完临界区的代码后，根据 lock 对象的 Mark Word 中的引用地址找到 Monitor 对象，设置 Owner 为空，并把此前保存在栈帧的锁记录中的 lock Mark Word 信息还原到 lock 的 Mark Word 中；
 - 然后 Thread-2 唤醒 EntryList 中等待的线程，被唤醒的线程开始竞争锁，竞争是非公平的，如果这时有新的线程进来并想要获取锁，可能直接就抢占到了，阻塞队列的线程就会继续阻塞；
 - WaitSet 中的 Thread-0 和 Thread-1 是以前获得过锁，但由于不满足继续执行的条件，从而进入 WAITING 状态的线程（wait-notify 机制）；
 
@@ -1157,7 +1155,7 @@ public static void main(String[] args) {
 
 ### 3.5.3 synchronized 进阶
 
-synchronized 的实现方式涉及偏向锁、轻量级锁和重量级锁。这些锁的设计目的是提升性能，减少线程争用时的开销。需要注意的是，然后锁分为了偏向锁、轻量级锁和重量级锁，但在使用的时候，都是用的 synchronized 关键字，锁的膨胀对开发者来说是透明的。
+synchronized 的实现方式涉及偏向锁、轻量级锁和重量级锁。这些锁的设计目的是提升性能，减少线程争用时的开销。需要注意的是，虽然锁分为了偏向锁、轻量级锁和重量级锁，但在使用的时候，都是用的 synchronized 关键字，锁的膨胀对开发者来说是透明的。
 
 
 
@@ -1289,7 +1287,7 @@ public static void method2() {
 
 
 
-当一个线程启动时，JVM 会为该线程在【虚拟机栈】中分配一块【栈内存】，这块【栈内存】时是线程私有的。每当线程访问方法时，都会在其【栈内存】中创建一个【栈贞】。【栈贞】遵循【先进后去】的原则。
+当一个线程启动时，JVM 会为该线程在【虚拟机栈】中分配一块【栈内存】，这块【栈内存】时是线程私有的。每当线程访问方法时，都会在其【栈内存】中创建一个【栈贞】。【栈贞】遵循【先进后出】的原则。
 
 栈帧的主要构成如下：
 
@@ -1351,7 +1349,7 @@ public static void method1() {
 
 
 
-当 Thread-1 进行轻量级加锁时，发现 Thread-0 已经对该对象（synchronized(该对象)）加了轻量级锁
+当 Thread-1 进行轻量级加锁时，发现 Thread-0 已经对该对象（synchronized(obj)）加了轻量级锁
 
 <img src="./assets/picture20.png" alt="picture20" style="zoom: 50%;" />
 
@@ -1360,6 +1358,7 @@ public static void method1() {
 这时 Thread-1 加轻量级锁失败，进入锁膨胀流程
 
 - 立即为 Object 对象申请 Monitor 锁，让 Object 指向重量级锁地址（Object 的 Mark Word 指向该 Monitor）。
+- 将 Monitor 的 Owner 引用指向 Thread-0。
 - 然后自己进入 Monitor 的 EntryList 中进行等待，并进入 BLOCKED 状态。
 
 <img src="./assets/picture21.png" alt="picture21" style="zoom: 50%;" />
@@ -1376,7 +1375,7 @@ public static void method1() {
 
 ### 3.5.3.4 锁自旋
 
-重量级锁竞争的时候，还可以使用自旋来进行优化，如果当前线程自旋成功（即这时候持锁线程已经退出了同步块，释放了锁），这时当前线程就可以避免阻塞。
+轻量级锁升级到重量级锁的时候，还可以使用自旋来进行优化，如果当前线程自旋成功（即这时候持锁线程已经退出了同步块，释放了锁），则可以避免升级为总量级锁。
 
 锁自旋优化主要是为了提高多线程程序在高并发环境下的性能，尤其是在某些情况下锁的争用不激烈时，可以通过避免频繁的上下文切换来提高性能。
 
@@ -1500,7 +1499,7 @@ Java中的`park`和`unpark`是`java.util.concurrent.locks.LockSupport`类中的�
 
 park()：
 
-- `park()`方法会使当前线程进入挂起状态，直到其他线程调用`unpark()`方法来唤醒它。
+- `park()`方法会使当前线程进入挂起状态，直到其他线程调用`unpark(被挂起的线程)`方法来唤醒它。
 
 - 该方法通常用于线程的同步和协调。
 
