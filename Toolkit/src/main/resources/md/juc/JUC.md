@@ -4764,3 +4764,99 @@ class Worker implements Runnable {
 
 - `CountDownLatch` 一旦计数器达到零，不能重置。如果需要重置计数器，应该考虑使用 `CyclicBarrier` 或其他工具类。
 - `CountDownLatch` 适用于一次性的任务同步，不能重复使用。
+
+
+
+## 7.3 ThreadLocal
+
+
+
+在Web服务中，`ThreadLocal` 常用于存储线程级别的上下文信息，特别是与当前请求相关的、在同一线程内需要共享的数据。一个典型的使用场景是存储用户信息，如从请求头解析出的 token，解析后的 `UserInfo` 可以在整个请求生命周期中被后续的代码所访问，而不需要反复解析 token 或重新获取用户信息。
+
+
+
+**使用场景示例：**
+
+1. 请求到达Web服务后，我们会从请求头中提取 token。
+
+2. 解析 token，获取用户信息（如 UserInfo）。
+
+3. 将这个 UserInfo 存储到 ThreadLocal 中，这样在当前线程中处理请求时，后续的代码（如服务层、DAO层等）都能获取到当前用户的信息。
+
+   
+
+**示例代码：**
+
+```java
+public class UserContext {
+    private static ThreadLocal<UserInfo> userContext = new ThreadLocal<>();
+
+    public static void setUserInfo(UserInfo userInfo) {
+        userContext.set(userInfo);
+    }
+
+    public static UserInfo getUserInfo() {
+        return userContext.get();
+    }
+
+    public static void clear() {
+        userContext.remove();
+    }
+}
+
+public class TokenFilter implements Filter {
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        HttpServletRequest httpRequest = (HttpServletRequest) request;
+        String token = httpRequest.getHeader("Authorization");
+
+        // 假设你有一个 TokenService 来解析 token
+        UserInfo userInfo = TokenService.parseToken(token);
+
+        // 将解析出的用户信息存入 ThreadLocal
+        UserContext.setUserInfo(userInfo);
+
+        // 继续执行请求链
+        try {
+            // 继续执行请求链
+            chain.doFilter(request, response);
+        } finally {
+            // 请求处理结束后清理 ThreadLocal，防止内存泄漏
+            UserContext.clear();
+        }
+    }
+}
+```
+
+
+
+**后续使用：**
+
+在服务层或DAO层中，你可以直接通过 `UserContext.getUserInfo()` 获取到当前请求的用户信息，而无需再次解析 token。
+
+```java
+public class SomeService {
+    public void someMethod() {
+        UserInfo userInfo = UserContext.getUserInfo();
+        // 使用 userInfo 进行数据库查询等操作
+    }
+}
+```
+
+
+
+**优点：**
+
+- 性能：避免了重复解析 token 或重新获取用户信息。
+
+- 简化代码：不需要将用户信息通过方法参数传递。
+
+- 线程隔离：确保每个请求有独立的 UserInfo，不会相互干扰。
+
+  
+
+**注意：**
+
+`ThreadLocal` 在请求结束后需要清理（如通过过滤器中的 `clear()`），否则会导致内存泄漏。
+
