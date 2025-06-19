@@ -668,7 +668,7 @@ public class Test05 {
 
 
 
-对于静态变量而言，实际会产生如下的 JVM 字节码指令:
+对于静态变量的自增而言，实际会产生如下的 JVM 字节码指令:
 
 ```java
 - getstatic      i			//	获取静态变量 i 的值（从主存获取值到工作内存）
@@ -1048,7 +1048,7 @@ Java 的 monitor 是一种同步机制，用于控制多个线程对共享资源
 
  
 
-为了让一个 Word 能存储更多信息，JVM 将 Word 的最低两位设置为标记为，不同的标记为表示对象处于不同的状态，具体如下
+为了让一个 Word 能存储更多信息，JVM 将 Word 的最低两位设置为标记为，不同的标记位表示对象处于不同的状态，具体如下
 
 ![img](assets/picture31.png)
 
@@ -1084,7 +1084,7 @@ Java 的 monitor 是一种同步机制，用于控制多个线程对共享资源
 
 ### 3.5.2 Monitor
 
-什么是 Monitor？可以把它理解为一个同步工具，也可以描述为一种同步机制，它通常被描述为一个对象。与一切皆对象一样，所有的 Java 对象是天生的 Monitor，每一个 Java 对象都有成为Monitor 的潜质，因为在 Java 的设计中 ，每一个 Java 对象自打娘胎里出来就带了一把看不见的锁（Monitor 由操作系统负责维护），它叫做内部锁或者 Monitor 锁。Moniter 也就是通常说 Synchronized 的对象锁，MarkWord 锁标识位为 10，其中指针指向的是 Monitor 对象的起始地址。
+什么是 Monitor？可以把它理解为一个同步工具，也可以描述为一种同步机制，它通常被描述为一个对象。与一切皆对象一样，所有的 Java 对象是天生的 Monitor，每一个 Java 对象都有成为Monitor 的潜质，因为在 Java 的设计中 ，每一个 Java 对象自打娘胎里出来就带了一把看不见的锁（Monitor 由操作系统负责维护），它叫做内部锁或者 Monitor 锁。Moniter 也就是通常说 Synchronized 的对象锁，锁对象的 Mark Word 锁标识位为 10，其中指针指向的是 Monitor 对象的起始地址。
 
 在 Java 虚拟机（HotSpot）中，Monitor 是由 ObjectMonitor 实现的，其主要数据结构如下（位于HotSpot虚拟机源码ObjectMonitor.hpp文件，C++实现的）：
 
@@ -1331,7 +1331,7 @@ public static void method2() {
 
 ### 3.5.3.3 重量级锁
 
-当多个线程频繁竞争同一把锁时，轻量级锁会升级为重量级锁。重量级锁会使线程阻塞，操作系统需要将线程从用户态切换到内核态，开销较大。
+当多个线程同一时间竞争同一把锁时，轻量级锁会升级为重量级锁。重量级锁会使线程阻塞，操作系统需要将线程从用户态切换到内核态，开销较大。
 
 
 
@@ -2321,7 +2321,7 @@ CPU 占用高的 Java 进程，再利用 top -Hp 进程id 来定位是哪个线�
 
    ```java
    try {
-       lock.lockInterruptibly(); // 响应中断
+           lock.lockInterruptibly(); // 响应中断
        try {
            // 临界区代码
        } finally {
