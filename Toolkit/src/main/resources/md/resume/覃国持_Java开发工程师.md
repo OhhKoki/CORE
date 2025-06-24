@@ -25,16 +25,15 @@
 
 # 专业技能
 
-- 熟悉 Java 编程：深入理解语言特性，熟练掌握集合、I/O、反射、Stream API 等核心特性。
+- 熟悉 Java 编程：深入理解语言特性，熟练掌握集合、I/O、反射、Stream API 等核心特性，阅读过部分 JDK 源码。
 
 - 熟悉 Java 并发编程，深入理解多线程原理、锁机制（如 synchronized、Lock），并熟练掌握并发集合、线程池及 JUC 工具包的应用，<span style="color:red">具备线上项目实战经验</span>。
-- 深入理解 JVM 内存模型、类加载机制、垃圾回收机制，<span style="color:red">具备线上 OOM 问题排查与解决的实战经验</span>。
+- 熟悉 JVM 内存模型、类加载机制、垃圾回收机制，<span style="color:red">具备线上 OOM 问题排查与解决的实战经验</span>。
 - 熟悉微服务架构开发，熟悉前后端分离规范与设计原则，熟练掌握 Spring Boot、Spring Cloud、MyBatis 等核心框架。
 - 熟悉 MySQL、Oracle 等主流关系型数据库，深入理解 SQL 执行流程、事务原理、索引机制及 MVCC 实现，<span style="color:red">具备丰富的线上 SQL 性能优化实战经验</span>。
 - 熟悉 Redis 缓存设计与典型场景应用，掌握持久化机制、分布式锁实现及缓存雪崩、击穿、穿透等问题的解决方案。
 - 熟悉 Kafka 架构设计与典型场景应用，掌握消息积压，消息丢失，重复消费等问题的解决方案。
 - 熟悉 Git、SVN 等版本控制工具，以及 Maven 等构建工具。
-- 熟悉 Linux 系统常用命令，具备线上问题排查与定位能力。
 - 熟悉 Linux 常用命令，并具备线上问题排查定位能力；熟悉 Docker 与 Nginx 的部署、配置与应用维护。
 - 熟悉 HTML、CSS、JavaScript 及 jQuery、Ajax 等前端技术栈。
 
