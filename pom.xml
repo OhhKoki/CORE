@@ -12,6 +12,7 @@
         <module>Toolkit</module>
         <module>DevOps</module>
         <module>Middleware</module>
+        <module>SpringBoot</module>
     </modules>
 
     <properties>
